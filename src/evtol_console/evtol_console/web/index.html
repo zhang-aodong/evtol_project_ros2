@@ -1,0 +1,7 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EVTOL 仿真控制台</title><style>html,body,#app{height:100%;margin:0}</style></head><body><div id="app"></div><script type="module">
+import {mountConsole} from './app.js';
+mountConsole(document.querySelector('#app'),async request=>{
+ const response=await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request)});
+ return await response.json();
+});
+</script></body></html>

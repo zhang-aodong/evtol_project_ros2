@@ -1,0 +1,17 @@
+build/
+install/
+log/
+bags/
+/reports/
+*.mcap
+*.db3
+__pycache__/
+*.pyc
+.pytest_cache/
+
+.visualization_deps/
+
+config/machine.local.json
+.algorithm_deps/
+.model_env/
+data/

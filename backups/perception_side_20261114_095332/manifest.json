@@ -1,0 +1,166 @@
+[
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\config\\targeting.yaml",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\config\\targeting.yaml",
+    "before": "edc1b08cb8d69bcc496cbd692befba5199912847e9712ab57774f6d0fd6e90e5",
+    "after": "610ab9291f1596fd4b5dbc45997bce78558c492f748a660c2ffd588f8aa48d04",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\00\\targeting.yaml"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\docs\\PERCEPTION_SIDE_FIX.md",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\docs\\PERCEPTION_SIDE_FIX.md",
+    "before": null,
+    "after": "b183a373aadcaa3c3a33ab56db0c987ee7b618a142c6ca6141111e331348cf50"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\tests\\probe_perception_side.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\tests\\probe_perception_side.py",
+    "before": null,
+    "after": "b694cd3f065b0695b0af6f9d05972707581a033307190234201773499e3c5880"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\tests\\test_perception_latency_side.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\tests\\test_perception_latency_side.py",
+    "before": null,
+    "after": "4f8145eb1024424742524075644c7f05b63737166e33e2a4604da6dafab648ff"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\tests\\test_targeting_nodes.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\tests\\test_targeting_nodes.py",
+    "before": "7a710cb6f42b75e8889e6c4cc0c56ab6f3c90a5aba707501bcc415166220e9d4",
+    "after": "ce3629e1084b457359097593d2b849ec63a6bdaf0bf9bfb0c9f58bc9861a6b3b",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\04\\test_targeting_nodes.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_bringup\\launch\\target_localization.launch.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_bringup\\launch\\target_localization.launch.py",
+    "before": "20f2e56d39d932fd8fefc10434c073f98499be23f59d066c9b4edfe9db6245d4",
+    "after": "72ecfeca9088ad8fbe28c317fe4e73a84ec2cd217924d8168150a5e8e691539e",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\05\\target_localization.launch.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_console\\evtol_console\\engine.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_console\\evtol_console\\engine.py",
+    "before": "f2e1dbfcd83ed9d2b7df6f706e526c3b04a4cdd43af3f7fee01ac1aa979e7fec",
+    "after": "949b275002c2cb8b9876c488b5c692ab66d0bdea720e7e57c75957e4f3f7d51e",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\06\\engine.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_console\\evtol_console\\processes.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_console\\evtol_console\\processes.py",
+    "before": "85b27999c0595e2b2acd5d7c68bf2ab840cb4f8c44e8e1e685f1e4777e6ef5ef",
+    "after": "e43cc2d7479ca1793268b05cc285640a1c8abad77f2fa50f8e6a3c355284dead",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\07\\processes.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_console\\evtol_console\\web\\app.js",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_console\\evtol_console\\web\\app.js",
+    "before": "473439bc2385d09996a8b99d1f9f3d427d5bcbf93b07a64922898530740ae610",
+    "after": "e07b55c2293cb0684f28d5fc7f1313e17f732a541b570a549821b0b312bd925e",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\08\\app.js"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_safety\\evtol_safety\\node.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_safety\\evtol_safety\\node.py",
+    "before": "3686936941a7046fb253d8063f654c23362025a912da851980de1141d57ce0b9",
+    "after": "f06536990a746f6d8110f06766ff52ef1d17c0101fd0d0075c3f601bc3c71613",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\09\\node.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_safety\\evtol_safety\\velocity.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_safety\\evtol_safety\\velocity.py",
+    "before": "6fe409cac6610f8be7da2038d29f71c758a3eaabace50b48d9748b4f76bae31d",
+    "after": "f1c08d117cd34bf3ea7e8ac8ed3a23b77afd6aec11259aacd70d0cf158b3c3e3",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\10\\velocity.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_simulation\\evtol_simulation\\backend.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_simulation\\evtol_simulation\\backend.py",
+    "before": "e4bff5eebdd3a671f032318a7b11b3f769ac6a5972e9465e85af1bdd5e6137ec",
+    "after": "fdd39d2a6bc5929ca37c2e413e70b3e07d1a79060c22db1e1ced7a1a4557b72b",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\11\\backend.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_simulation\\evtol_simulation\\sensor_node.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_simulation\\evtol_simulation\\sensor_node.py",
+    "before": "4ea3aba28043b9022c175643262b0316f281192e54b346cea374bdc0fea39bca",
+    "after": "29e395cde572dc64c16ef768d585b1af27490cfea20c5ad554156fc34a998a56",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\12\\sensor_node.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_targeting\\evtol_targeting\\clustering.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_targeting\\evtol_targeting\\clustering.py",
+    "before": "e3ed70f4e589256a855a0edcd57eafbcc2d91a0fc41155a702ddcc003f45488c",
+    "after": "ace19208fe2f17237712ff3ab2d62718da743ceefec07ffae2b5a171468af3f3",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\13\\clustering.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_targeting\\evtol_targeting\\common.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_targeting\\evtol_targeting\\common.py",
+    "before": "5125141d29a47bcc926466ffa4efa0cd1077657af2842d5f3cef0f5e86d71493",
+    "after": "9137cba37705d2ac23a6399e023b76aa798023a805063bfb7d36b102b4a4debe",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\14\\common.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_targeting\\evtol_targeting\\configuration.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_targeting\\evtol_targeting\\configuration.py",
+    "before": "f404c0d23b4c6a092731e1372a8f0685722039623c762ce61eb3704f1b934e4f",
+    "after": "e8fbe5a85d1a8f74e837c3e80bea7cc53e8d49ab0e7f5086aa3ebfce9d20b889",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\15\\configuration.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_targeting\\evtol_targeting\\experiment_node.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_targeting\\evtol_targeting\\experiment_node.py",
+    "before": "f9da37e8b64ddfd6beaed602fc923dfa452990d090b24d52218f4a4b996aaf02",
+    "after": "13c99eca0b7261dbc124fe3d34c82f0782c931ca803e704bd12c8374b1827e54",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\16\\experiment_node.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_targeting\\evtol_targeting\\lidar_obstacles.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_targeting\\evtol_targeting\\lidar_obstacles.py",
+    "before": null,
+    "after": "7c1d742a17b8df3edabf512288cc5030369d465b8abbd5ae03a434a3b5c2f17c"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_targeting\\evtol_targeting\\localizer_node.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_targeting\\evtol_targeting\\localizer_node.py",
+    "before": "cae7695c699a7dfdc9601f5de5bdfc4fbc777b01c5da14020ee7778a72822714",
+    "after": "1e3ec7eb5f43f8129ddfe3a879d39add69606ea39af199646fc177266cfb9969",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\18\\localizer_node.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_targeting\\evtol_targeting\\vision_node.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_targeting\\evtol_targeting\\vision_node.py",
+    "before": "c0d1e4e68b6c87bcfaac927e52e5f3e186e942d88bc80c8d5b00ffa9312bcb83",
+    "after": "19c28e55faa6d49319ad05181a5c19e8d91ecff2dd2a4888b1c11cdd0e579690",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\19\\vision_node.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.perception_fix\\project\\src\\evtol_visualization\\evtol_visualization\\bridge.py",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\src\\evtol_visualization\\evtol_visualization\\bridge.py",
+    "before": "0bbbfceac1293fb073fdce59bf2474ca1df4d79d0999ff1ecee55977487072a9",
+    "after": "990107fa3bdca15a23dbc95e1a9304e38b4b77144aeb172a1ef454bbd1b23a46",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\20\\bridge.py"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.fusion_stage\\foxglove\\evtol-console\\dist\\extension.js",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\foxglove\\evtol-console\\dist\\extension.js",
+    "before": "5f5548b8a281d723fc82c11dc4c4048e200a16ecefd78a2fddab3751afa89a4d",
+    "after": "21d118009169f1d9d1673d0679684f958fea6c6d9654282c69db5926cfb66708",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\21\\extension.js"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.fusion_stage\\foxglove\\evtol-console\\evtol.evtol-console-0.1.0.foxe",
+    "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\foxglove\\evtol-console\\evtol.evtol-console-0.1.0.foxe",
+    "before": "8ceee3141c175f32af5c8e44b0f1881af9f3591179f20ce8c3c5ad02612844d1",
+    "after": "212d20ddcfcae8da9326827ca4c6a24b9eae97ddfeeebbb5825b60587d36344e",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\22\\evtol.evtol-console-0.1.0.foxe"
+  },
+  {
+    "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.fusion_stage\\foxglove\\evtol-console\\dist\\extension.js",
+    "target": "C:\\Users\\11732\\.foxglove-studio\\extensions\\evtol.evtol-console-0.1.0\\dist\\extension.js",
+    "before": "5f5548b8a281d723fc82c11dc4c4048e200a16ecefd78a2fddab3751afa89a4d",
+    "after": "21d118009169f1d9d1673d0679684f958fea6c6d9654282c69db5926cfb66708",
+    "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\perception_side_20261114_095332\\23\\extension.js"
+  }
+]

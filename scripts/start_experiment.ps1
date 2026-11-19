@@ -1,0 +1,12 @@
+[CmdletBinding()]
+param([string]$Config='', [switch]$Execute, [switch]$Actors, [switch]$NewSession)
+$ErrorActionPreference='Stop'
+$root=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+if (-not $Config) { $Config=Join-Path $root 'config\targeting.yaml' }
+. "$PSScriptRoot\activate.ps1"
+if ($NewSession) {
+    & python "$PSScriptRoot\prepare_targeting.py" --config $Config --new-session
+    if ($LASTEXITCODE -ne 0) { throw 'Session initialization failed.' }
+}
+& ros2 launch evtol_bringup target_experiment.launch.py "config:=$Config" "execute:=$($Execute.IsPresent.ToString().ToLower())" "actors:=$($Actors.IsPresent.ToString().ToLower())"
+if ($LASTEXITCODE -ne 0) { throw 'Experiment launch failed.' }

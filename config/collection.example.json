@@ -1,0 +1,37 @@
+{
+  "output_dir": "data/collections",
+  "bag": {
+    "storage_id": "mcap",
+    "use_sim_time": true,
+    "topics": [
+      "/clock",
+      "/tf",
+      "/tf_static",
+      "/simulation/reference_origin",
+      "/drone1/camera/rgb/image_raw",
+      "/drone1/camera/semantic/class_ids",
+      "/drone1/camera/rgb/camera_info",
+      "/drone1/state/odometry",
+      "/drone1/lidar/points"
+    ],
+    "queue_mb": 256,
+    "split_size_mb": 2048
+  },
+  "dataset": {
+    "namespace": "drone1",
+    "rate_hz": 5.0,
+    "class_ids": [
+      6
+    ],
+    "labels": [
+      "detection",
+      "segmentation"
+    ],
+    "split": "train",
+    "min_area_px": 20,
+    "polygon_epsilon_px": 1.0,
+    "jpeg_quality": 95,
+    "queue_frames": 8,
+    "pair_capacity": 12
+  }
+}

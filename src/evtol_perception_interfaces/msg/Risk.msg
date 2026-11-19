@@ -1,0 +1,9 @@
+std_msgs/Header header
+string session_id
+bool valid
+bool warning
+uint64 track_id
+float64 cpa_time_s
+float64 cpa_distance_m
+float64 nearest_obstacle_m
+string reason

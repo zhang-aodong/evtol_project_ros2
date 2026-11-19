@@ -1,0 +1,146 @@
+{
+  "date": "2026-11-18",
+  "tests_passed": 62,
+  "scope": "Real UE 4.27 + installed Windows ROS2 Jazzy packages + 32 obstacle drones + current user route + GPU semantic inference + preview subscriber",
+  "runs": [
+    {
+      "label": "takeoff_support_fixed",
+      "result": "PASS",
+      "report": "reports\\probe_takeoff_support_fixed.json",
+      "run": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\data\\console_runs\\ros_20261118_220708_733c85",
+      "actors": 32,
+      "visible": true,
+      "maximum_height_enu_m": 13.442179083824158,
+      "takeoff_phase_s": 7.201863765716553,
+      "observed_time_above_2m_s": 63.377137899398804,
+      "unexpected_ground_returns": 0,
+      "minimum_takeoff_vertical_command_mps": 0.0,
+      "source": {
+        "Lidar1": {
+          "observed_frames": 2514,
+          "producer_hz": 19.62280418605102,
+          "empty_frames": 0,
+          "incomplete_frames": 0
+        },
+        "NavigationLidar": {
+          "observed_frames": 2491,
+          "producer_hz": 19.49276519087651,
+          "empty_frames": 0,
+          "incomplete_frames": 0
+        }
+      },
+      "streams": {
+        "lidar": {
+          "frames": 2455,
+          "observed_hz": 19.787040083578766,
+          "empty_frames": 0,
+          "median_return_span_deg": 180.0
+        },
+        "navigation": {
+          "frames": 2437,
+          "observed_hz": 19.630917360365327,
+          "empty_frames": 0,
+          "median_return_span_deg": 356.0000305175781
+        },
+        "preview": {
+          "frames": 544,
+          "observed_hz": 4.330593446197394,
+          "empty_frames": 0,
+          "median_return_span_deg": 180.0
+        }
+      },
+      "preview_comparison": {
+        "matched_timestamps": 537,
+        "payload_mismatches": 0
+      },
+      "command_reasons": {
+        "LiDAR stale": 16,
+        "mission_waiting": 914,
+        "waiting_for_async_plan": 44,
+        "async_route_expired": 4,
+        "dynamic_evasive_velocity": 29,
+        "avoidance": 880,
+        "fused_dynamic_avoidance": 74,
+        "LiDAR acquisition age exceeds budget": 10,
+        "dynamic_no_safe_candidate": 116,
+        "clear": 317,
+        "planning_budget_exceeded": 28,
+        "State stale or invalid": 3,
+        "lidar_dynamic_avoidance": 6
+      },
+      "config_unchanged": true,
+      "remaining_owned_processes": []
+    },
+    {
+      "label": "takeoff_support_offscreen",
+      "result": "PASS",
+      "report": "reports\\probe_takeoff_support_offscreen.json",
+      "run": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\data\\console_runs\\ros_20261118_221046_d1e0e3",
+      "actors": 32,
+      "visible": false,
+      "maximum_height_enu_m": 9.73490858078003,
+      "takeoff_phase_s": 1.1205217838287354,
+      "observed_time_above_2m_s": 41.89992165565491,
+      "unexpected_ground_returns": 0,
+      "minimum_takeoff_vertical_command_mps": 0.16046168077124567,
+      "source": {
+        "Lidar1": {
+          "observed_frames": 1950,
+          "producer_hz": 19.440170972608616,
+          "empty_frames": 0,
+          "incomplete_frames": 0
+        },
+        "NavigationLidar": {
+          "observed_frames": 1940,
+          "producer_hz": 19.33690489917189,
+          "empty_frames": 0,
+          "incomplete_frames": 0
+        }
+      },
+      "streams": {
+        "lidar": {
+          "frames": 1891,
+          "observed_hz": 19.654292489104655,
+          "empty_frames": 0,
+          "median_return_span_deg": 180.0
+        },
+        "navigation": {
+          "frames": 1877,
+          "observed_hz": 19.504808029930814,
+          "empty_frames": 0,
+          "median_return_span_deg": 356.00001525878906
+        },
+        "preview": {
+          "frames": 420,
+          "observed_hz": 4.292611996390393,
+          "empty_frames": 0,
+          "median_return_span_deg": 180.0
+        }
+      },
+      "preview_comparison": {
+        "matched_timestamps": 413,
+        "payload_mismatches": 0
+      },
+      "command_reasons": {
+        "LiDAR stale": 14,
+        "mission_waiting": 854,
+        "LiDAR acquisition age exceeds budget": 15,
+        "waiting_for_async_plan": 29,
+        "async_route_expired": 4,
+        "dynamic_evasive_velocity": 22,
+        "fused_dynamic_avoidance": 43,
+        "avoidance": 539,
+        "dynamic_no_safe_candidate": 76,
+        "clear": 288
+      },
+      "config_unchanged": true,
+      "remaining_owned_processes": []
+    }
+  ],
+  "notes": [
+    "Complete scan means all configured scan rays were executed; return points still depend on surfaces, occlusion and sensor range.",
+    "The main sensor has a 180 degree horizontal FOV. Navigation sensor has 360 degree horizontal coverage with 4 degree azimuth sampling.",
+    "Preview is separately limited to 5 Hz; observed ROS frequencies include startup and real scheduling/network gaps. No stamps or old scans were repeated.",
+    "Safety still stops for stale or invalid data and genuinely blocked routes; continuous 20 Hz latency is not guaranteed under arbitrary load."
+  ]
+}

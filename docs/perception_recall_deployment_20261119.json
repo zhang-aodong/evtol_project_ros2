@@ -1,0 +1,160 @@
+{
+  "source_files": {
+    "src\\evtol_bringup\\launch\\target_localization.launch.py": {
+      "sha256": "121a1e90fe7bb83d65fdce26a05e3e690b25ebccbf27812abfb775438c8d0ed7",
+      "staged_matches": true
+    },
+    "src\\evtol_console\\evtol_console\\configuration.py": {
+      "sha256": "92aebbe646da732b032baf7ca40ffd54f37638e15b696d8d011ef98049a3ba6c",
+      "staged_matches": true
+    },
+    "src\\evtol_console\\evtol_console\\engine.py": {
+      "sha256": "dd66662b5b3144072125e2ca3c894c63d69e7a2fa4e62cc5a1a93b3a6146b9ea",
+      "staged_matches": true
+    },
+    "src\\evtol_console\\evtol_console\\processes.py": {
+      "sha256": "d72910271531a1799c69426a847088b818d79b07da45f4e0c277f5d554325da9",
+      "staged_matches": true
+    },
+    "src\\evtol_console\\evtol_console\\web\\app.js": {
+      "sha256": "e40a240297c4642218025d1bfd729f27f440189c3cb88d974f64c10161576990",
+      "staged_matches": true
+    },
+    "src\\evtol_safety\\evtol_safety\\velocity.py": {
+      "sha256": "6f14d16f5d8fac5d5cb7ff4a00543d7b7f26357a4fcd13587220008143e9a56e",
+      "staged_matches": true
+    },
+    "src\\evtol_simulation\\evtol_simulation\\acquisition_support.py": {
+      "sha256": "d7cd5c333b7f2b0d077327731d0de6e95b1ca842636fcac007ad4398fbdf4d94",
+      "staged_matches": true
+    },
+    "src\\evtol_simulation\\evtol_simulation\\backend.py": {
+      "sha256": "88ad5ed1418d7715e497e2bb23b4c09985f4d7fba0516e2e9283af8d62df2678",
+      "staged_matches": true
+    },
+    "src\\evtol_simulation\\evtol_simulation\\imu_ring.py": {
+      "sha256": "1b4630c34163bc928cebad119f1a00349b67a9104b442c97caa88070bb42392a",
+      "staged_matches": true
+    },
+    "src\\evtol_simulation\\evtol_simulation\\perception_lidar.py": {
+      "sha256": "c20499c881475e554a34beeb1a34f303281b2924df563071d9c976e1d0e50e56",
+      "staged_matches": true
+    },
+    "src\\evtol_simulation\\evtol_simulation\\roi_lidar.py": {
+      "sha256": "2b3b8208b83b6c2ac7de68acc48e3c25175de811f6bdfccef89bbb0ee638bed0",
+      "staged_matches": true
+    },
+    "src\\evtol_simulation\\evtol_simulation\\sensor_node.py": {
+      "sha256": "7dd1ecdadd1d6e68172c3d45d014565b0e14ad107395035844e1802d1e561697",
+      "staged_matches": true
+    },
+    "src\\evtol_simulation\\evtol_simulation\\surround_settings.py": {
+      "sha256": "deb07bd2649e479c5baf057b0bd23cf6cbf87984e0f3728ca6ee524c37651e84",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\clustering.py": {
+      "sha256": "d7b3d28706be6216cf69343fb3d6a7a61b48cb346430e0a3fafd8805ba80cf75",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\configuration.py": {
+      "sha256": "e383828ffbf5d41b18a19d5f68084c7a07003202b13119b023265bd4e783e8ea",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\evaluation.py": {
+      "sha256": "3f696df58f8722a3bf0fb97c1f9fa28ae8492fb538daa06ef5cd4a2b25199a13",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\experiment.py": {
+      "sha256": "48860a26606b93e5c33507c5d40d166815623ee9d8909bcd021e4af118c68033",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\experiment_node.py": {
+      "sha256": "312ff74063c18f6496cbb956d60c389f7fd249d1aab7b02f378e3c7f4ef88ed3",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\localizer_node.py": {
+      "sha256": "c4ef650ed3971360c660c30c46a419896151348091d4090182def6d18a1664f9",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\model_worker.py": {
+      "sha256": "19f560c2033f5256faa6e97dfcbf8729e7598056ca3ccd3abd695ccfe0552bc1",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\surround_fusion.py": {
+      "sha256": "8a9e5a38fe78e92580037319d9e69a9cbe79fc95bcf51d2d5c6afaed1a3649fd",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\surround_geometry.py": {
+      "sha256": "d2f80f3a4e2329952d3153b1dc235d36ca6d3fc1ef32d0832bbf4feb3cb9f083",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\surround_vision.py": {
+      "sha256": "63d94e3145613e7b8c72014c6b1187639b1f4012fa61429c7edd4de176b7a20c",
+      "staged_matches": true
+    },
+    "src\\evtol_targeting\\evtol_targeting\\vision_node.py": {
+      "sha256": "57d2ed70eebcf84681ec6145de20d5c6a8f93edbaca2c1834d9e5e590a13753c",
+      "staged_matches": true
+    },
+    "src\\evtol_visualization\\evtol_visualization\\bridge.py": {
+      "sha256": "7321ce4e4a9af399e153dc4e069df953a51b39a3ec252b39ece42033056c1ea9",
+      "staged_matches": true
+    },
+    "config\\targeting.yaml": {
+      "sha256": "af12e80fbe8d145808184ba348d1b8ec3a0dd7bee243cc02b99522754ef8ea2f",
+      "staged_matches": true
+    },
+    "ue_support\\Source\\AirSimCaptureVisibility.h": {
+      "sha256": "5d0b88f71dfe799dfd57d3d8beb1780bc48c4f1f6f3a7fe278216a62893b57aa",
+      "staged_matches": true
+    },
+    "ue_support\\Source\\UnrealImageCapture.cpp": {
+      "sha256": "aa48fdb9b4d55baf536bdc94cf65c914fc7717378ba13dc10dd89c44374cc901",
+      "staged_matches": true
+    },
+    "ue_support\\Source\\UnrealSensors\\UnrealLidarSensor.cpp": {
+      "sha256": "93edfe193c67e766f15998fe6789a434e2db1f20f774bec967973e8dee53964b",
+      "staged_matches": true
+    },
+    "ue_support\\Source\\AirLib\\include\\sensors\\lidar\\LidarSimpleParams.hpp": {
+      "sha256": "4412573d4c0edee91d0e2dd53a9e428c047ee30ba187436c74f5eb028abd9281",
+      "staged_matches": true
+    },
+    "tests\\probe_perception_recall.py": {
+      "sha256": "751a66923daeee0de6d0b901fa92e2d56238e28de3cd81908eca042afd19f8c9",
+      "staged_matches": true
+    },
+    "tests\\test_console.py": {
+      "sha256": "fb731a578b9f69260ba2bd959494cf34c560c81bf83ca01345f05cb0c1a13853",
+      "staged_matches": true
+    },
+    "tests\\test_fused_experiment.py": {
+      "sha256": "02862fa8507fc6f619e8220ca7a164ff5fefe6a041d12542ad30aa129ce1f927",
+      "staged_matches": true
+    },
+    "tests\\test_imu_ring.py": {
+      "sha256": "3514c86667c7bf6aaa6dd818aa13a55d7e02bb7ea7129af16e36b264db8225fc",
+      "staged_matches": true
+    },
+    "tests\\test_native_kinematics.py": {
+      "sha256": "ded68a230426e967f7897fee7ac6173cd4854a54876abd810b939d91095117a7",
+      "staged_matches": true
+    },
+    "tests\\test_perception_latency_side.py": {
+      "sha256": "f2c1d30ffe3b343d64872cbac55437b7ae82d21da783afa6a2fe7baf1d729316",
+      "staged_matches": true
+    },
+    "tests\\test_surround.py": {
+      "sha256": "71546698b446667f7264be1c9e2f206e165e8e54cd9e074c8da9b2e08b85c91f",
+      "staged_matches": true
+    },
+    "tests\\test_surround_node.py": {
+      "sha256": "713683bcff391124f16a3ae311fc17257b71ae8e02a50e60c7c6667850fd98dc",
+      "staged_matches": true
+    }
+  },
+  "models": {
+    "best.pt": "458cc3276d2d8e2a21abfb4b114fde3181e488c399c4ce9c5d794161015a4859",
+    "surround_semantic.pt": "a123be5cffe056ecc924691a37f9ab6193427eeaed848941b5e62025dc38a1e4"
+  }
+}

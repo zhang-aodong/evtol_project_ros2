@@ -1,0 +1,164 @@
+{
+  "root": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2",
+  "changes": [
+    {
+      "path": "README.md",
+      "before": "3b862ef88bbdf67682e7fe5fba005aaa1a08d5eaf02093de2bd2e607f9c172c9",
+      "after": "e011e1ebbbf3ac72f319e0f18a8b599477baeb11a3915da3aa33fc2d55a52d6c"
+    },
+    {
+      "path": "config/collection.example.json",
+      "before": null,
+      "after": "52f83529b70f200c7e5eb610409e8b7c45f8b1d916f84734f15bd967ecaf9d6a"
+    },
+    {
+      "path": "config/targeting.yaml",
+      "before": "610ab9291f1596fd4b5dbc45997bce78558c492f748a660c2ffd588f8aa48d04",
+      "after": "d983a296ac73604a882cdec6e240e074865012c86d4f5dfb5d3847ddb7a3dce5"
+    },
+    {
+      "path": "docs/数据采集与训练数据导出.md",
+      "before": null,
+      "after": "8db6ba5627985126d846570d5bd76ec17f9e02119a16508b82c695a85b16b507"
+    },
+    {
+      "path": "foxglove/evtol-console/evtol.evtol-console-0.1.0.foxe",
+      "before": "212d20ddcfcae8da9326827ca4c6a24b9eae97ddfeeebbb5825b60587d36344e",
+      "after": "40eae5ce7b8bc88d2e8a2c886a0be7052f01947b2612183ee4b89ad9c9efdf4e"
+    },
+    {
+      "path": "foxglove/evtol-console/dist/extension.js",
+      "before": "21d118009169f1d9d1673d0679684f958fea6c6d9654282c69db5926cfb66708",
+      "after": "be1f73b59c24db9168bd4c91f90890afed70b188504756c9501b0f363b9ff12e"
+    },
+    {
+      "path": "foxglove/evtol-console/tests/ui.mjs",
+      "before": "7ba3a34e681828247a2e5b6378f9d32d2aec6cfbdeff24ca0879d9c4bcb119cf",
+      "after": "75e7207ce51c8aab110c657ec6f63e672fc4f956629873c9340289e224867ea6"
+    },
+    {
+      "path": "scripts/start_collection.ps1",
+      "before": null,
+      "after": "7b8a2e2e86434dc5fb6e0df0babec8990052f73ab106ba36bc49c3b17cc071b4"
+    },
+    {
+      "path": "src/evtol_collection/package.xml",
+      "before": null,
+      "after": "a25a48f2ae14476d20298699d0be8fb949b6e8c6f5a7c5b24e53ddc1c1ea4470"
+    },
+    {
+      "path": "src/evtol_collection/README.md",
+      "before": null,
+      "after": "8aca1dcc407ff2ab2172cd95e1c71204e3498bb35f7f3cf5814980c14bdb67b7"
+    },
+    {
+      "path": "src/evtol_collection/setup.cfg",
+      "before": null,
+      "after": "5e42a2c590c2cf9ac344bd2a1e49c944706b377c37a1a57e317699aed1be5992"
+    },
+    {
+      "path": "src/evtol_collection/setup.py",
+      "before": null,
+      "after": "d6f1ef34dc4a8165d3c35c24e2c562edb12d6e832f3d5b51e29e3c6ceae6172a"
+    },
+    {
+      "path": "src/evtol_collection/evtol_collection/build_index.py",
+      "before": null,
+      "after": "02860f3b0c6bd1799e8f396b51f258216c72aff95efbc27a294611b609687735"
+    },
+    {
+      "path": "src/evtol_collection/evtol_collection/dataset.py",
+      "before": null,
+      "after": "a0445ddf33f1c7b4b8b6200e0b72c3dbae1540b4b72a54e52a8e7543a23ad640"
+    },
+    {
+      "path": "src/evtol_collection/evtol_collection/options.py",
+      "before": null,
+      "after": "739c2c3e104b7e4085156f07ef993c8480b6532648197a591285b6a64ff3b406"
+    },
+    {
+      "path": "src/evtol_collection/evtol_collection/recorder.py",
+      "before": null,
+      "after": "dd890960895b24dc54d85b4fbacf6f11a93ac85c478dbfa3f381ace3ab47cb6b"
+    },
+    {
+      "path": "src/evtol_collection/evtol_collection/__init__.py",
+      "before": null,
+      "after": "f198e2ee5bbca6c7191cda7ac28a928b67a045fdb03300cd3962b4295de2a5ff"
+    },
+    {
+      "path": "src/evtol_collection/resource/evtol_collection",
+      "before": null,
+      "after": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "src/evtol_console/package.xml",
+      "before": "ed5a8adb9e730884a837c40609c888ced3232e84b2b14c589689860b6b429297",
+      "after": "af56715d3e74854abd99fbf2a09d9f29083f8fcfda5e6831209ac4dd7f1d5f53"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/engine.py",
+      "before": "949b275002c2cb8b9876c488b5c692ab66d0bdea720e7e57c75957e4f3f7d51e",
+      "after": "a947760ba24db5ea0cd6846482e40eeda1a032fe42bf8674298538226e8e046f"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/server.py",
+      "before": "5fe19703f3c896eadae56767b07d734cb12e59824f196e698b739a35eefef825",
+      "after": "f7d610bcdfdfc84d3bdc5d071924236ce4b42e07e5e58f6ee199923eb58819e5"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/web/app.js",
+      "before": "e07b55c2293cb0684f28d5fc7f1313e17f732a541b570a549821b0b312bd925e",
+      "after": "149cf18f377c158ea425eaf213743c00578107c70edf00004f00b2e0e0a882a5"
+    },
+    {
+      "path": "src/evtol_safety/evtol_safety/gateway.py",
+      "before": "8e5b892e1ee076e251b856fc28277a0a6cb1c463a561e629315ab91b1c6d0baf",
+      "after": "8bc3fd1177f7d060cac026ef84788ffa6cc2ff20d91fe7115c3e2b8ca3617663"
+    },
+    {
+      "path": "src/evtol_safety/evtol_safety/node.py",
+      "before": "f06536990a746f6d8110f06766ff52ef1d17c0101fd0d0075c3f601bc3c71613",
+      "after": "2884726fb7e2e6db13ce63b4951a7f074b7972d12d9ad1eb8069520023948faa"
+    },
+    {
+      "path": "src/evtol_simulation/evtol_simulation/safety_lidar.py",
+      "before": "d7518cc7a2870801980fec03cb967b6cd5d4c70b60e6a61c4a2eb8a3e02297b5",
+      "after": "702247424a6a8fd3b93f3415933480b64a45508a4c970b6fa8746812a0873829"
+    },
+    {
+      "path": "tests/probe_collection_live.py",
+      "before": null,
+      "after": "3e620938da2e7e95ec45205dbe321535c049ea1c46045fe81e1697def81db153"
+    },
+    {
+      "path": "tests/test_collection.py",
+      "before": null,
+      "after": "26493bb191b63675338da3c4be1feda732938ee6927af7e5e5c55ba3b75193eb"
+    },
+    {
+      "path": "tests/test_console.py",
+      "before": "ae9a52cc8d7b95195aa488766cbe95aedf8f4dc0cc69585f33e0745f9e4dab04",
+      "after": "91ac14be9048f3b03564fab02cfe7581732baa82210629e3b21d31774cda559b"
+    },
+    {
+      "path": "tests/test_targeting_nodes.py",
+      "before": "ce3629e1084b457359097593d2b849ec63a6bdaf0bf9bfb0c9f58bc9861a6b3b",
+      "after": "f0e946c3413244ebdc6ba4071a693bbbc09e818794a52aea02d67cc0e771a82a"
+    },
+    {
+      "path": "tests/test_windows_rings.py",
+      "before": "b0f17da94b2f75bfb355b3dc2f0e450c64c5cbc940d8bbbe97ccc5db378846cf",
+      "after": "bca8ad7d9c07f57b2bce1cbd8ae511c4ce2f139b5f640c1354b1bf563de8a0e9"
+    }
+  ],
+  "extension": "C:\\Users\\11732\\.foxglove-studio\\extensions\\evtol.evtol-console-0.1.0",
+  "extension_files": [
+    "package.json",
+    "README.md",
+    "CHANGELOG.md",
+    "dist/extension.js"
+  ],
+  "backup": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2\\backups\\collection_navigation_20261118_012547",
+  "result": "DEPLOYED"
+}

@@ -1,0 +1,62 @@
+# Target rates copied from evtol_project/airsim_realtime_uav/config/default.yaml.
+# This performance profile explicitly uses 640x480 rather than source dual 2K.
+backend: airsim
+source_parameters: source_parameters.yaml
+namespace: drone1
+airsim:
+  host: 127.0.0.1
+  port: 41451
+  timeout_s: 3.0
+  vehicle: Drone1
+rates: {camera: 20.0, lidar: 20.0, imu: 100.0, gnss: 10.0, truth: 20.0, radio: 10.0}
+stale_timeout_s: 2.0
+max_truth_bracket_ms: 50.0
+# Debug visualization only. Set false when a localization node owns map->base_link.
+publish_truth_tf: true
+frames:
+  world: map
+  base: drone1/base_link
+  camera: drone1/camera_link
+  optical: drone1/camera_optical_frame
+  lidar: drone1/lidar_link
+  imu: drone1/imu_link
+  gnss: drone1/gnss_link
+camera:
+  reorder_window_s: 0.2
+  name: front_camera
+  transport: shared_memory
+  width: 640
+  height: 480
+  horizontal_fov_deg: 35.0
+  xyz_frd_m: [0.3, 0.0, 0.0]
+  rpy_deg: [0.0, -10.0, 0.0]
+  slots: 8
+  timeout_s: 2.0
+lidar:
+  name: Lidar1
+  transport: shared_memory
+  mapping_name: AirSimLidar_Lidar1
+  max_points: 65536
+  slots: 8
+  range_m: 100.0
+  default_intensity: 1.0
+  xyz_frd_m: [0.0, 0.0, 0.0]
+  rpy_deg: [0.0, 0.0, 0.0]
+imu:
+  transport: shared_memory
+  buffer_latency_s: 0.1
+  name: Imu1
+  xyz_frd_m: [0.0, 0.0, 0.0]
+  rpy_deg: [0.0, 0.0, 0.0]
+gnss:
+  name: Gps
+  xyz_frd_m: [0.0, 0.0, 0.0]
+  rpy_deg: [0.0, 0.0, 0.0]
+acceptance:
+  min_rate_ratio: 0.975
+  max_rate_ratio: 1.10
+  min_realtime_factor: 0.95
+  max_realtime_factor: 1.05
+  max_gap_periods: 4.0
+  max_sync_delta_ms: 50.0
+  require_nonempty_lidar: true

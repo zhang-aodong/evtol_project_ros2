@@ -1,0 +1,12 @@
+uint64 track_id
+int32 class_id
+geometry_msgs/Point position
+geometry_msgs/Vector3 velocity
+geometry_msgs/Vector3 size
+float64[36] covariance
+uint32 point_count
+string reference_kind
+string state
+bool measured
+bool orientation_valid
+builtin_interfaces/Time last_measurement_stamp

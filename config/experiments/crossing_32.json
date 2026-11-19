@@ -1,0 +1,824 @@
+{
+  "version": 2,
+  "ue": {
+    "editor": "D:\\Software\\Epic\\UE_4.27\\Engine\\Binaries\\Win64\\UE4Editor.exe",
+    "project": "D:\\Software\\UEproject\\MyProject 4.27\\MyProject 4.27\\MyProject.uproject",
+    "settings": "src/evtol_simulation/config/airsim.navigation_2k.json",
+    "visible": true,
+    "width": 1280,
+    "height": 720
+  },
+  "actors": {
+    "count": 32,
+    "agents": [
+      {
+        "name": "Drone2",
+        "speed_mps": 2.1394267984578836,
+        "spawn_ned_m": [
+          25.0,
+          10.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            10.0,
+            25.0,
+            7.0
+          ],
+          [
+            -10.0,
+            25.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone3",
+        "speed_mps": 1.525010755222667,
+        "spawn_ned_m": [
+          25.0,
+          -13.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -13.0,
+            25.0,
+            10.0
+          ],
+          [
+            13.0,
+            25.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone4",
+        "speed_mps": 1.7750293183691193,
+        "spawn_ned_m": [
+          25.0,
+          16.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            16.0,
+            25.0,
+            13.0
+          ],
+          [
+            -16.0,
+            25.0,
+            13.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone5",
+        "speed_mps": 1.7232107381488229,
+        "spawn_ned_m": [
+          25.0,
+          -19.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -19.0,
+            25.0,
+            7.0
+          ],
+          [
+            19.0,
+            25.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone6",
+        "speed_mps": 2.2364712141640126,
+        "spawn_ned_m": [
+          37.0,
+          10.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            10.0,
+            37.0,
+            10.0
+          ],
+          [
+            -10.0,
+            37.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone7",
+        "speed_mps": 2.176699487422911,
+        "spawn_ned_m": [
+          37.0,
+          -13.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -13.0,
+            37.0,
+            13.0
+          ],
+          [
+            13.0,
+            37.0,
+            13.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone8",
+        "speed_mps": 2.3921795677048454,
+        "spawn_ned_m": [
+          37.0,
+          16.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            16.0,
+            37.0,
+            7.0
+          ],
+          [
+            -16.0,
+            37.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone9",
+        "speed_mps": 1.586938832629416,
+        "spawn_ned_m": [
+          37.0,
+          -19.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -19.0,
+            37.0,
+            10.0
+          ],
+          [
+            19.0,
+            37.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone10",
+        "speed_mps": 1.9219218196852705,
+        "spawn_ned_m": [
+          49.0,
+          10.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            10.0,
+            49.0,
+            13.0
+          ],
+          [
+            -10.0,
+            49.0,
+            13.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone11",
+        "speed_mps": 1.5297972194380702,
+        "spawn_ned_m": [
+          49.0,
+          -13.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -13.0,
+            49.0,
+            7.0
+          ],
+          [
+            13.0,
+            49.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone12",
+        "speed_mps": 1.7186379748036034,
+        "spawn_ned_m": [
+          49.0,
+          16.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            16.0,
+            49.0,
+            10.0
+          ],
+          [
+            -16.0,
+            49.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone13",
+        "speed_mps": 2.0053552881033623,
+        "spawn_ned_m": [
+          49.0,
+          -19.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -19.0,
+            49.0,
+            13.0
+          ],
+          [
+            19.0,
+            49.0,
+            13.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone14",
+        "speed_mps": 1.5265359696838636,
+        "spawn_ned_m": [
+          61.0,
+          10.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            10.0,
+            61.0,
+            7.0
+          ],
+          [
+            -10.0,
+            61.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone15",
+        "speed_mps": 1.6988376506866485,
+        "spawn_ned_m": [
+          61.0,
+          -13.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -13.0,
+            61.0,
+            10.0
+          ],
+          [
+            13.0,
+            61.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone16",
+        "speed_mps": 2.149884437779523,
+        "spawn_ned_m": [
+          61.0,
+          16.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            16.0,
+            61.0,
+            13.0
+          ],
+          [
+            -16.0,
+            61.0,
+            13.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone17",
+        "speed_mps": 2.0449414806032165,
+        "spawn_ned_m": [
+          61.0,
+          -19.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -19.0,
+            61.0,
+            7.0
+          ],
+          [
+            19.0,
+            61.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone18",
+        "speed_mps": 1.7204406220406967,
+        "spawn_ned_m": [
+          73.0,
+          10.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            10.0,
+            73.0,
+            10.0
+          ],
+          [
+            -10.0,
+            73.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone19",
+        "speed_mps": 2.089265683875909,
+        "spawn_ned_m": [
+          73.0,
+          -13.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -13.0,
+            73.0,
+            13.0
+          ],
+          [
+            13.0,
+            73.0,
+            13.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone20",
+        "speed_mps": 2.3094304566778265,
+        "spawn_ned_m": [
+          73.0,
+          16.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            16.0,
+            73.0,
+            7.0
+          ],
+          [
+            -16.0,
+            73.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone21",
+        "speed_mps": 1.506498759678061,
+        "spawn_ned_m": [
+          73.0,
+          -19.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -19.0,
+            73.0,
+            10.0
+          ],
+          [
+            19.0,
+            73.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone22",
+        "speed_mps": 2.305819251832808,
+        "spawn_ned_m": [
+          85.0,
+          10.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            10.0,
+            85.0,
+            13.0
+          ],
+          [
+            -10.0,
+            85.0,
+            13.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone23",
+        "speed_mps": 2.198139394988227,
+        "spawn_ned_m": [
+          85.0,
+          -13.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -13.0,
+            85.0,
+            7.0
+          ],
+          [
+            13.0,
+            85.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone24",
+        "speed_mps": 1.8402505165179919,
+        "spawn_ned_m": [
+          85.0,
+          16.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            16.0,
+            85.0,
+            10.0
+          ],
+          [
+            -16.0,
+            85.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone25",
+        "speed_mps": 1.6554794998117814,
+        "spawn_ned_m": [
+          85.0,
+          -19.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -19.0,
+            85.0,
+            13.0
+          ],
+          [
+            19.0,
+            85.0,
+            13.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone26",
+        "speed_mps": 2.4572130722067813,
+        "spawn_ned_m": [
+          97.0,
+          10.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            10.0,
+            97.0,
+            7.0
+          ],
+          [
+            -10.0,
+            97.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone27",
+        "speed_mps": 1.8365945451126269,
+        "spawn_ned_m": [
+          97.0,
+          -13.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -13.0,
+            97.0,
+            10.0
+          ],
+          [
+            13.0,
+            97.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone28",
+        "speed_mps": 1.5927458433801478,
+        "spawn_ned_m": [
+          97.0,
+          16.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            16.0,
+            97.0,
+            13.0
+          ],
+          [
+            -16.0,
+            97.0,
+            13.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone29",
+        "speed_mps": 1.596716376833464,
+        "spawn_ned_m": [
+          97.0,
+          -19.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -19.0,
+            97.0,
+            7.0
+          ],
+          [
+            19.0,
+            97.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone30",
+        "speed_mps": 2.3474943663474597,
+        "spawn_ned_m": [
+          109.0,
+          10.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            10.0,
+            109.0,
+            10.0
+          ],
+          [
+            -10.0,
+            109.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone31",
+        "speed_mps": 2.1037260313668913,
+        "spawn_ned_m": [
+          109.0,
+          -13.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -13.0,
+            109.0,
+            13.0
+          ],
+          [
+            13.0,
+            109.0,
+            13.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone32",
+        "speed_mps": 2.30712827327438,
+        "spawn_ned_m": [
+          109.0,
+          16.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            16.0,
+            109.0,
+            7.0
+          ],
+          [
+            -16.0,
+            109.0,
+            7.0
+          ]
+        ],
+        "repeat": 0
+      },
+      {
+        "name": "Drone33",
+        "speed_mps": 2.2297317866938178,
+        "spawn_ned_m": [
+          109.0,
+          -19.0,
+          0.0
+        ],
+        "waypoints_enu_m": [
+          [
+            -19.0,
+            109.0,
+            10.0
+          ],
+          [
+            19.0,
+            109.0,
+            10.0
+          ]
+        ],
+        "repeat": 0
+      }
+    ],
+    "pedestrians_enabled": false
+  },
+  "mission": {
+    "mode": "waypoints",
+    "speed_mps": 2.0,
+    "waypoints_enu_m": [
+      [
+        0,
+        0,
+        10
+      ],
+      [
+        0,
+        121.0,
+        10
+      ]
+    ],
+    "land_at_last": false,
+    "profile": {
+      "heading_deg": 0.0,
+      "points": [
+        {
+          "speed_mps": 0.0,
+          "height_m": 0.0,
+          "distance_m": 100.0
+        },
+        {
+          "speed_mps": 2.0,
+          "height_m": 10.0,
+          "distance_m": 100.0
+        },
+        {
+          "speed_mps": 2.0,
+          "height_m": 10.0,
+          "distance_m": 30.0
+        },
+        {
+          "speed_mps": 0.0,
+          "height_m": 0.0,
+          "distance_m": 100.0
+        }
+      ]
+    },
+    "max_speed_mps": 2.0,
+    "max_acceleration_mps2": 1.0
+  },
+  "run": {
+    "execute": false,
+    "actors": true,
+    "evaluate": true,
+    "new_session": true
+  },
+  "sensors": {
+    "horizontal_fov_deg": 70.0,
+    "imgsz": 960
+  },
+  "experiment": {
+    "radius_m": 20.0,
+    "association_gate_m": 3.0,
+    "evidence_s": 0.3,
+    "window_s": 10.0,
+    "timely_s": 0.5,
+    "exit_margin_m": 2.0,
+    "exit_hold_s": 1.0,
+    "buffer_s": 0.4,
+    "truth_max_gap_s": 0.15,
+    "truth_hz": 20.0,
+    "publish_hz": 5.0,
+    "class_ids": [
+      6
+    ],
+    "target_size_m": [
+      1.0,
+      1.0,
+      0.5
+    ],
+    "ego_radius_m": 0.5,
+    "risk_clearance_m": 2.0,
+    "risk_horizon_s": 3.0,
+    "score_only_flying": true,
+    "warning_events": []
+  },
+  "dynamic": {
+    "enabled": true,
+    "horizon_s": 3.0,
+    "step_s": 0.1,
+    "ego_radius_m": 0.5,
+    "clearance_m": 1.0,
+    "min_size_m": [
+      1.0,
+      1.0,
+      0.5
+    ],
+    "sigma_scale": 2.0,
+    "max_age_s": 0.5,
+    "max_velocity_std_mps": 3.0,
+    "max_targets": 128,
+    "degraded_speed_mps": 0.5
+  },
+  "ui": {
+    "log_filter": "",
+    "log_errors": false,
+    "log_follow": true,
+    "profile_default_distance_m": 100.0
+  }
+}

@@ -1,0 +1,8 @@
+[
+  "src/evtol_safety/evtol_safety/node.py",
+  "tests/test_targeting_nodes.py",
+  "src/evtol_safety/evtol_safety/velocity.py",
+  "src/evtol_safety/evtol_safety/async_navigation.py",
+  "src/evtol_targeting/evtol_targeting/localizer_node.py",
+  "tests/test_fused_experiment.py"
+]

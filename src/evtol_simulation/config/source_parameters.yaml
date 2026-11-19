@@ -1,0 +1,278 @@
+semantic_segmentation:
+  enabled: true
+  camera_name: front_camera
+  image_type: 5
+  compress: false
+  uncompressed_channel_order: bgr
+  vertical_flip: false
+  save_color_mask: false
+  save_class_id_mask: true
+  default_class_id: 0
+  unknown_class_id: 255
+  reset_object_regex: .*
+  fail_on_unmatched_class: true
+  fail_on_unmatched_rule: true
+  fail_on_assignment_conflict: true
+  fail_on_excess_unmapped_pixels: true
+  max_unmapped_fraction: 0.001
+  classes:
+  - name: background
+    id: 0
+    color_rgb:
+    - 0
+    - 0
+    - 0
+    object_regexes: []
+  - name: aircraft
+    id: 1
+    color_rgb:
+    - 153
+    - 108
+    - 6
+    object_regexes:
+    - ^uploads_files_3116828_PLANE_.*$
+  - name: high_rise
+    id: 2
+    color_rgb:
+    - 112
+    - 105
+    - 191
+    object_regexes:
+    - ^Box034$
+    - ^Box043$
+    - ^Box044$
+    - ^Box054$
+    - ^uploads_files_5346341_Buildings_bina.*$
+  - name: pedestrian
+    id: 3
+    color_rgb:
+    - 89
+    - 121
+    - 72
+    object_regexes:
+    - ^Unarmed_Walk_Forward.*$
+  - name: ground
+    id: 4
+    color_rgb:
+    - 190
+    - 225
+    - 64
+    object_regexes:
+    - ^Plane.*$
+    - ^uploads_files_5346341_Buildings_Plane.*$
+    - ^Object002$
+  - name: runway
+    id: 5
+    color_rgb:
+    - 206
+    - 190
+    - 59
+    object_regexes:
+    - ^Box035$
+    - ^Box041$
+    - ^Box055$
+    - ^Object004$
+  - name: drone
+    id: 6
+    color_rgb:
+    - 81
+    - 13
+    - 36
+    object_regexes:
+    - .*[Qq]uad.*
+    - .*[Rr]otor.*
+gnss_raw:
+  enabled: true
+  random_seed: 0
+  light_speed_mps: 299792458.0
+  l1_frequency_hz: 1575420000.0
+  satellite_count: 10
+  elevation_mask_deg: 10.0
+  satellite_slant_range_m: 20200000.0
+  satellite_speed_min_mps: 2800.0
+  satellite_speed_max_mps: 4200.0
+  ambiguity_min_cycles: 10000
+  ambiguity_max_cycles: 80000
+  pseudorange_sigma_m: 1.0
+  carrier_phase_sigma_cycles: 0.01
+  doppler_sigma_hz: 0.2
+  snr_sigma_dbhz: 1.5
+  receiver_clock_bias_s: 5.0e-08
+  snr_base_dbhz: 28.0
+  snr_elevation_gain_db: 22.0
+  snr_min_dbhz: 20.0
+  snr_max_dbhz: 55.0
+  wgs84_semi_major_axis_m: 6378137.0
+  wgs84_flattening: 0.0033528106647474805
+five_g_a:
+  enabled: true
+  rate_hz: 10.0
+  random_seed: 42
+  carrier_frequency_hz: 3500000000.0
+  tx_power_dbm: 30.0
+  gnb_gain_dbi: 15.0
+  ue_gain_dbi: 0.0
+  prs_processing_gain_db: 20.0
+  los_shadow_std_db: 2.0
+  nlos_shadow_std_db: 5.0
+  nlos_extra_loss_db: 15.0
+  min_rsrp_dbm: -120.0
+  rsrp_sigma_table:
+  - - -80.0
+    - 0.15
+  - - -90.0
+    - 0.3
+  - - -100.0
+    - 0.7
+  - - -110.0
+    - 1.5
+  - - -120.0
+    - 3.0
+  nlos_range_bias_mean_m: 3.0
+  nlos_range_bias_std_m: 1.5
+  min_measured_range_m: 0.01
+  speed_of_light_mps: 299792458.0
+  los:
+    enabled: true
+    earth_radius_m: 6378137.0
+    min_cos_latitude: 1.0e-08
+    fallback_to_los_on_api_error: true
+    update_interval_s: 1.0
+  solver:
+    min_valid_gnbs: 4
+    method: trf
+    loss: soft_l1
+    f_scale: 1.0
+    max_nfev: 200
+    min_range_sigma_m: 1.0e-06
+    default_initial_height_m: 10.0
+  evaluation:
+    error_percentile: 0.95
+  visualizations:
+    enabled: true
+    dpi: 150
+    figure_size_2d:
+    - 10
+    - 8
+    figure_size_3d:
+    - 12
+    - 8
+    figure_size_error:
+    - 12
+    - 5
+    figure_size_axis:
+    - 12
+    - 9
+    grid_alpha: 0.3
+  base_stations:
+  - id: gNB1
+    position_ned_m:
+    - -200.0
+    - -200.0
+    - -30.0
+  - id: gNB2
+    position_ned_m:
+    - 0.0
+    - -220.0
+    - -45.0
+  - id: gNB3
+    position_ned_m:
+    - 200.0
+    - -180.0
+    - -30.0
+  - id: gNB4
+    position_ned_m:
+    - 220.0
+    - 180.0
+    - -100.0
+  - id: gNB5
+    position_ned_m:
+    - 0.0
+    - 220.0
+    - -55.0
+  - id: gNB6
+    position_ned_m:
+    - -220.0
+    - 180.0
+    - -100.0
+interference_drones:
+  enabled: true
+  takeoff_stagger_s: 1.0
+  takeoff_timeout_s: 20.0
+  move_timeout_s: 30.0
+  rpc_timeout_s: 40.0
+  join_timeout_s: 15.0
+  land_on_stop: true
+  agents:
+  - vehicle_name: Drone2
+    spawn_offset_ned_m:
+    - 30.0
+    - 0.0
+    - 0.0
+    speed_mps: 3.0
+    waypoints_frd_m:
+    - - 30.0
+      - 0.0
+      - -10.0
+  - vehicle_name: Drone3
+    spawn_offset_ned_m:
+    - 40.0
+    - 0.0
+    - 0.0
+    speed_mps: 3.0
+    waypoints_frd_m:
+    - - 40.0
+      - 1.0
+      - -10.0
+  - vehicle_name: Drone4
+    spawn_offset_ned_m:
+    - 50.0
+    - 0.0
+    - 0.0
+    speed_mps: 3.0
+    waypoints_frd_m:
+    - - 50.0
+      - 0.0
+      - -10.0
+  - vehicle_name: Drone5
+    spawn_offset_ned_m:
+    - 60.0
+    - 0.0
+    - 0.0
+    speed_mps: 3.0
+    waypoints_frd_m:
+    - - 60.0
+      - 0.0
+      - -11.0
+pedestrians:
+  enabled: true
+  update_rate_hz: 30.0
+  forward_yaw_offset_deg: -90.0
+  teleport: true
+  count: 1
+  agents:
+  - name: Pedestrian_2
+    speed_mps: 1.0
+    loop: true
+    coordinate_mode: relative_initial
+    waypoints:
+    - - 8.0
+      - 0.0
+      - 0.0
+    - - 0.0
+      - 0.0
+      - 0.0
+flight:
+  climb_altitude_m: 10.0
+  climb_speed_mps: 2.0
+  fixed:
+    coordinate_mode: relative_heading
+    speed_mps: 3.0
+    timeout_s: 180.0
+    repeat: 1
+    drivetrain: forward_only
+    yaw_mode: path
+    waypoints:
+    - - 100.0
+      - 0.0
+      - -10.0

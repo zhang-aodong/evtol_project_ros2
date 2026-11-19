@@ -1,0 +1,21 @@
+[
+  "ue_support/Source/AirLib/include/sensors/lidar/LidarSimpleParams.hpp",
+  "ue_support/Source/UnrealSensors/UnrealLidarSensor.cpp",
+  "ue_support/Source/UnrealSensors/LidarSharedMemoryWriter.h",
+  "ue_support/Source/UnrealSensors/LidarSharedMemoryWriter.cpp",
+  "ue_support/manifest.json",
+  "src/evtol_simulation/evtol_simulation/lidar_ring.py",
+  "src/evtol_simulation/evtol_simulation/safety_lidar.py",
+  "src/evtol_simulation/evtol_simulation/backend.py",
+  "src/evtol_simulation/evtol_simulation/preflight.py",
+  "src/evtol_simulation/config/airsim.navigation_2k.json",
+  "src/evtol_simulation/config/airsim.20hz.json",
+  "src/evtol_simulation/config/airsim.source_2k.json",
+  "config/targeting.yaml",
+  "config/navigation_validation.yaml",
+  "config/navigation_obstacle_validation.yaml",
+  "config/navigation_landing_validation.yaml",
+  "src/evtol_safety/evtol_safety/node.py",
+  "tests/test_windows_rings.py",
+  "tests/test_targeting_nodes.py"
+]

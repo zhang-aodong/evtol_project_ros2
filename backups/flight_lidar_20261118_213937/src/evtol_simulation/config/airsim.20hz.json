@@ -1,0 +1,122 @@
+{
+  "SettingsVersion": 1.2,
+  "SimMode": "Multirotor",
+  "ClockSpeed": 1,
+  "ClockType": "ScalableClock",
+  "ViewMode": "NoDisplay",
+  "SubWindows": [],
+  "SegmentationSettings": {
+    "InitMethod": "None",
+    "MeshNamingMethod": "StaticMeshName",
+    "OverrideExisting": true
+  },
+  "Vehicles": {
+    "Drone2": {
+      "VehicleType": "SimpleFlight",
+      "X": 30,
+      "Y": 0,
+      "Z": 0
+    },
+    "Drone3": {
+      "VehicleType": "SimpleFlight",
+      "X": 40,
+      "Y": 0,
+      "Z": 0
+    },
+    "Drone4": {
+      "VehicleType": "SimpleFlight",
+      "X": 50,
+      "Y": 0,
+      "Z": 0
+    },
+    "Drone5": {
+      "VehicleType": "SimpleFlight",
+      "X": 60,
+      "Y": 0,
+      "Z": 0
+    },
+    "Drone6": {
+      "VehicleType": "SimpleFlight",
+      "X": 70,
+      "Y": 0,
+      "Z": 0
+    },
+    "Drone7": {
+      "VehicleType": "SimpleFlight",
+      "X": 80,
+      "Y": 0,
+      "Z": 0
+    },
+    "Drone1": {
+      "VehicleType": "SimpleFlight",
+      "Sensors": {
+        "Imu1": {
+          "SensorType": 2,
+          "Enabled": true,
+          "X": 0,
+          "Y": 0,
+          "Z": 0,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0
+        },
+        "Gps": {
+          "SensorType": 3,
+          "Enabled": true,
+          "X": 0,
+          "Y": 0,
+          "Z": 0,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0
+        },
+        "Lidar1": {
+          "SensorType": 6,
+          "Enabled": true,
+          "X": 0,
+          "Y": 0,
+          "Z": 0,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0,
+          "NumberOfChannels": 128,
+          "PointsPerSecond": 460800,
+          "RotationsPerSecond": 20,
+          "UpdateFrequency": 20,
+          "UseWallClockFrequency": true,
+          "HorizontalFOVStart": -90,
+          "HorizontalFOVEnd": 90,
+          "VerticalFOVUpper": 15,
+          "VerticalFOVLower": -15,
+          "Range": 100,
+          "DataFrame": "SensorLocalFrame",
+          "DrawDebugPoints": false
+        }
+      },
+      "Cameras": {
+        "front_camera": {
+          "X": 0.3,
+          "Y": 0,
+          "Z": 0,
+          "Roll": 0,
+          "Pitch": -10,
+          "Yaw": 0,
+          "CaptureSettings": [
+            {
+              "ImageType": 0,
+              "Width": 640,
+              "Height": 480,
+              "FOV_Degrees": 35
+            },
+            {
+              "ImageType": 5,
+              "Width": 640,
+              "Height": 480,
+              "FOV_Degrees": 35
+            }
+          ]
+        }
+      }
+    }
+  }
+}

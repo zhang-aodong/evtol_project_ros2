@@ -1,0 +1,7 @@
+uint32 prn
+float64 pseudorange_m
+float64 carrier_phase_cycles
+float64 doppler_hz
+float64 snr_dbhz
+float64 elevation_deg
+float64 azimuth_deg

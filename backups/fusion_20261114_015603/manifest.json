@@ -1,0 +1,185 @@
+{
+  "target": "D:\\ZAD_Files\\evtol_files\\evtol_project_ros2",
+  "files": [
+    {
+      "path": "src/evtol_targeting/package.xml",
+      "before": "4305cb628b69fa73d7d3c9dda73c5b7fd03a64e297177b9e7135b99792b9d995",
+      "after": "7031ef3b29c07f12a8c9059bb3cec8b7ceffbe505ff2686b7f1f85de9aea26de"
+    },
+    {
+      "path": "src/evtol_bringup/launch/target_localization.launch.py",
+      "before": "bafe059905f2b54b62d067bf80b1f1fc75c7d1759db15f14ffdc833e8de167da",
+      "after": "20f2e56d39d932fd8fefc10434c073f98499be23f59d066c9b4edfe9db6245d4"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/configuration.py",
+      "before": "7f8098659b33d9af4db7dae2055e18f453ac499a9ba2f78a720d946ce4b09af2",
+      "after": "4625ee316f91914ce619a180db75760aae28ed14f203ac1d0e199752da7f80a1"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/engine.py",
+      "before": "390ae3acddb7575087406d2fe83900e9350daa39a3ab4fa52fac9334402ee6e7",
+      "after": "be04f5a31530b68a88449c14fab4ba39a45bff76787add77f5df488011f59e83"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/experiment_config.py",
+      "before": null,
+      "after": "f3552eef21be3c6195caf0a3aa9a49435a4484662a65b983123d9c229fa70f83"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/processes.py",
+      "before": "943d2de55000b95a2f00a5c6db938d8cd8d534a7e6e9014a23fca22e37b6c010",
+      "after": "85b27999c0595e2b2acd5d7c68bf2ab840cb4f8c44e8e1e685f1e4777e6ef5ef"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/server.py",
+      "before": "7caf856f711e447c0d093348c23214ee53753a27045768f8cefd10b93775e951",
+      "after": "5fe19703f3c896eadae56767b07d734cb12e59824f196e698b739a35eefef825"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/web/app.js",
+      "before": "c3c9368c04fa1e0b83f88fe77c336eee2087acf2a5c83cd3f83d1c3be2880af8",
+      "after": "adbbc17cf013d348ece8a36b4d121fb650700d5b87d26f9d3191090b9a5b1be6"
+    },
+    {
+      "path": "src/evtol_safety/evtol_safety/async_navigation.py",
+      "before": null,
+      "after": "547bf42726a719094d1588ef6bbc36e0c8d280390c034515030d3f1232d6e81a"
+    },
+    {
+      "path": "src/evtol_safety/evtol_safety/dynamic.py",
+      "before": null,
+      "after": "3419f5d09c9908b3d957fbc255a8b4ce3344594d529fae5762711b6da70214f2"
+    },
+    {
+      "path": "src/evtol_safety/evtol_safety/node.py",
+      "before": "5480c180e2bbc3c2626a33b95c58bd24306c518d62c781fa6d417f8143172053",
+      "after": "3686936941a7046fb253d8063f654c23362025a912da851980de1141d57ce0b9"
+    },
+    {
+      "path": "src/evtol_safety/evtol_safety/velocity.py",
+      "before": "41ab982b05f06423dbce1c2c36243ac69f4f28af1e96c388921b22cfd7d3fee5",
+      "after": "6fe409cac6610f8be7da2038d29f71c758a3eaabace50b48d9748b4f76bae31d"
+    },
+    {
+      "path": "src/evtol_scenario/evtol_scenario/actors.py",
+      "before": "5337b583c7d984e0f265267ae5cad0758e477b6d4f635523a92e7ea8d989334a",
+      "after": "916ee4068ecd79fc8d0a3e0f2ff3bf03bd4d1a19badbd11d309130bc156cdc89"
+    },
+    {
+      "path": "src/evtol_targeting/evtol_targeting/configuration.py",
+      "before": "4488fca3ed0d43d30d61ab4aeb016efba0438f588ff5fde28948f0d1780eb69d",
+      "after": "f404c0d23b4c6a092731e1372a8f0685722039623c762ce61eb3704f1b934e4f"
+    },
+    {
+      "path": "src/evtol_targeting/evtol_targeting/evaluation.py",
+      "before": "4f2ed79c09c62b4dc5eadb59ab4889091466d2a2c879e7fa398a0028a149ff1f",
+      "after": "8b3d0ce48b0a553421f113ba2cc7ee2dffc9cae40c998257192e030b2ca67ef2"
+    },
+    {
+      "path": "src/evtol_targeting/evtol_targeting/experiment.py",
+      "before": null,
+      "after": "67797d98f2a044a4ba9b68a5d369d57a61b190255ff74225ac14f6abdb681383"
+    },
+    {
+      "path": "src/evtol_targeting/evtol_targeting/experiment_node.py",
+      "before": null,
+      "after": "f9da37e8b64ddfd6beaed602fc923dfa452990d090b24d52218f4a4b996aaf02"
+    },
+    {
+      "path": "src/evtol_targeting/evtol_targeting/experiment_options.py",
+      "before": null,
+      "after": "487fcd75b85304c3a72a159c0c285c8a0605c43fc329ef024d990f1a6e741c7f"
+    },
+    {
+      "path": "src/evtol_targeting/evtol_targeting/localizer_node.py",
+      "before": "0e4551944d6c50a8ab19a66c2cecb750f0f269d8dcc044b212630946384d6f2a",
+      "after": "cae7695c699a7dfdc9601f5de5bdfc4fbc777b01c5da14020ee7778a72822714"
+    },
+    {
+      "path": "src/evtol_targeting/evtol_targeting/warning_audit.py",
+      "before": null,
+      "after": "0bcee6aab06d5fa4d3170da5618d01be3195da2af0290ec526f71d124f59804e"
+    },
+    {
+      "path": "src/evtol_visualization/evtol_visualization/bridge.py",
+      "before": "7ae4e9cb122d8b106801cd080d6d4e9ab5fa6a37c1dbefd2669a5cef4ee3e1de",
+      "after": "0bbbfceac1293fb073fdce59bf2474ca1df4d79d0999ff1ecee55977487072a9"
+    },
+    {
+      "path": "scripts/generate_experiment.py",
+      "before": null,
+      "after": "539b8199594eb7ed55ffed325d4699cb065f0890a804eddf4bf0a8e2518f0ebb"
+    },
+    {
+      "path": "scripts/start_console.ps1",
+      "before": "cabaa31505820fbba08b24c186b11411f38cdb1c8e215f166692b260d709b3f9",
+      "after": "9ed70bb0180146b67b8a9d8de139c93586e9b81a51eeddfa4ddb1df4b8fcf790"
+    },
+    {
+      "path": "scripts/summarize_experiment.py",
+      "before": null,
+      "after": "03d3abee3582a355c3a0e687bd356a59d09a26d8dfbc86fad452b41e5e8ccc57"
+    },
+    {
+      "path": "tests/test_console.py",
+      "before": "242e104d2db59a3327a1f590b81f9eda73a10e318ffecd587bf5f3e847c03cec",
+      "after": "9382422412f0bfca1b799be4333a8afe9d95003d3a7eff90aad46345b14576af"
+    },
+    {
+      "path": "tests/test_experiment_nodes.py",
+      "before": null,
+      "after": "00201e178cdf63faa2703bf9ec4b2e7795e5f519010bc1f7b58b1942dbced98b"
+    },
+    {
+      "path": "tests/test_fused_experiment.py",
+      "before": null,
+      "after": "8f308d4c4212ce121ee42f4ec6912423a435e10b7ad73b2f9a1942147c22d9f8"
+    },
+    {
+      "path": "tests/test_targeting_nodes.py",
+      "before": "5408820d067b76afaa513dd1c514cd0d83c33ce75f1714b853b5a0515382c6ae",
+      "after": "7a710cb6f42b75e8889e6c4cc0c56ab6f3c90a5aba707501bcc415166220e9d4"
+    },
+    {
+      "path": "docs/融合避障与检测实验使用说明.md",
+      "before": null,
+      "after": "7fda653722688fb20d33a6bef92f9bd97faa075657fc769de431e70b0c2c93dd"
+    },
+    {
+      "path": "docs/融合避障实现验证记录.md",
+      "before": null,
+      "after": "55f188496cdffe9394c8d697c7af670dab10483a307a3f502464fa3785889755"
+    },
+    {
+      "path": "config/experiments/crossing_32.json",
+      "before": null,
+      "after": "467ac2cb22d0b415875b768989b64a3c1ccf287d74fee8b19e6ca1aefdd9d688"
+    },
+    {
+      "path": "config/experiments/crossing_4.json",
+      "before": null,
+      "after": "dba6afcbb2bd702e3ef27c493e7f7bdc1223d0eaeca6fd2ece317691724d7a68"
+    },
+    {
+      "path": "foxglove/evtol-console/evtol.evtol-console-0.1.0.foxe",
+      "before": "2dc586b807338534d31f2f7650ccace8ab2f0c8b1f2b147d59f2004f620504cc",
+      "after": "f39d685f9b1693fb895bedac9c01b6d97e643ab6d4f6e608a933a8e309ef2e72"
+    },
+    {
+      "path": "foxglove/evtol-console/dist/extension.js",
+      "before": "c1118db331a7ac83476bfc1c2a512a151444fe9a13be34664698dde922e64daa",
+      "after": "6a38c47b5ff5510918daea1e7393af42d47e0279f5e8f18613050d9cf0fbf8ab"
+    },
+    {
+      "path": "foxglove/evtol-console/tests/ui.mjs",
+      "before": "7148457535da61d389455fad18de0267d3687f0b0dfc59433fcf4b3a32030a63",
+      "after": "7ba3a34e681828247a2e5b6378f9d32d2aec6cfbdeff24ca0879d9c4bcb119cf"
+    },
+    {
+      "path": "README.md",
+      "before": "c09141e813f156eed53894ce312cd197b4210f54317cf1691db793655b129a53",
+      "after": "3b862ef88bbdf67682e7fe5fba005aaa1a08d5eaf02093de2bd2e607f9c172c9"
+    }
+  ]
+}

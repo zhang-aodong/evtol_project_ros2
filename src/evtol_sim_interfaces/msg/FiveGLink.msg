@@ -1,0 +1,8 @@
+string gnb_id
+geometry_msgs/Point base_station_enu
+float64 prs_rsrp_dbm
+bool is_los
+float64 range_sigma_m
+float64 measured_range_m
+float64 measured_rtt_s
+bool measurement_valid

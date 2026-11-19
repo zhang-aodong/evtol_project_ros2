@@ -1,0 +1,128 @@
+{
+  "weights": "best.pt",
+  "source": "../evtol_realtime_uav/.training_run/semantic_20261118/training/yolo26n_semantic_finetune_v2/weights/best.pt",
+  "sha256": "458cc3276d2d8e2a21abfb4b114fde3181e488c399c4ce9c5d794161015a4859",
+  "task": "semantic",
+  "classes": {
+    "0": "background",
+    "1": "aircraft",
+    "2": "high_rise",
+    "3": "pedestrian",
+    "4": "ground",
+    "5": "runway",
+    "6": "drone"
+  },
+  "runtime": "semantic_runtime/ultralytics",
+  "runtime_origin": "yolo_seg/.worktrees/yolo26-semantic/ultralytics",
+  "runtime_license": "semantic_runtime/LICENSE (AGPL-3.0)",
+  "python": "3.11",
+  "dependencies": "../environment/requirements-model.txt",
+  "note": "Seven-class semantic checkpoint. Runtime and weights are shipped inside this workspace; training source is provenance only. Keep the custom semantic runtime.",
+  "model": "YOLO26n-sem",
+  "training": {
+    "epochs": 12,
+    "best_epoch": 12,
+    "imgsz": 1024,
+    "images": 2256
+  },
+  "evaluation": {
+    "metrics": {
+      "metrics/mIoU": 0.8954804539680481,
+      "metrics/pixel_acc": 0.9907773733139038,
+      "fitness": 0.8954804539680481
+    },
+    "per_class_iou": [
+      0.9847560524940491,
+      0.7289001941680908,
+      0.9661827683448792,
+      0.8791211247444153,
+      0.9648489356040955,
+      0.9935034513473511,
+      0.7510501146316528
+    ],
+    "per_class_recall": [
+      0.991280198097229,
+      0.8917321562767029,
+      0.9815332293510437,
+      0.9598096013069153,
+      0.9883661866188049,
+      0.9954516887664795,
+      0.8765683770179749
+    ],
+    "names": {
+      "0": "background",
+      "1": "aircraft",
+      "2": "high_rise",
+      "3": "pedestrian",
+      "4": "ground",
+      "5": "runway",
+      "6": "drone"
+    },
+    "speed_ms": {
+      "preprocess": 3.4783576309581097,
+      "inference": 1.3483093393925982,
+      "loss": 0.0008938496692131585,
+      "postprocess": 0.10878132117530576
+    },
+    "summary": [
+      {
+        "Class": "background",
+        "Images": 439,
+        "Pixels": 75125744,
+        "IoU": 0.98476,
+        "mIoU": 0.89548,
+        "pixel_acc": 0.99078
+      },
+      {
+        "Class": "aircraft",
+        "Images": 439,
+        "Pixels": 2417227,
+        "IoU": 0.7289,
+        "mIoU": 0.89548,
+        "pixel_acc": 0.99078
+      },
+      {
+        "Class": "high_rise",
+        "Images": 439,
+        "Pixels": 52759264,
+        "IoU": 0.96618,
+        "mIoU": 0.89548,
+        "pixel_acc": 0.99078
+      },
+      {
+        "Class": "pedestrian",
+        "Images": 307,
+        "Pixels": 1478213,
+        "IoU": 0.87912,
+        "mIoU": 0.89548,
+        "pixel_acc": 0.99078
+      },
+      {
+        "Class": "ground",
+        "Images": 439,
+        "Pixels": 30938622,
+        "IoU": 0.96485,
+        "mIoU": 0.89548,
+        "pixel_acc": 0.99078
+      },
+      {
+        "Class": "runway",
+        "Images": 439,
+        "Pixels": 182158912,
+        "IoU": 0.9935,
+        "mIoU": 0.89548,
+        "pixel_acc": 0.99078
+      },
+      {
+        "Class": "drone",
+        "Images": 352,
+        "Pixels": 365741,
+        "IoU": 0.75105,
+        "mIoU": 0.89548,
+        "pixel_acc": 0.99078
+      }
+    ]
+  },
+  "previous_sha256": "8e15841986e6c4a16458aca83cad757a04f7eb76ed00e169c0c2e28340de3e98",
+  "backup": "backups/semantic_model_20261118_211502_744314"
+}

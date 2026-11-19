@@ -1,0 +1,98 @@
+[
+  {
+    "path": "Source/UnrealImageCapture.cpp",
+    "sha256": "39cf7c1038616032b35c553efd53269f1f8469fe38f1b5c52b2068d2b29fdbc1"
+  },
+  {
+    "path": "Source/UnrealImageCapture.h",
+    "sha256": "cfb399baa14e6ee6534f0dd06d28f192022404844612506b39214b5bc5b4db9b"
+  },
+  {
+    "path": "Source/SharedMemoryCameraWriter.cpp",
+    "sha256": "cfcb0ec2b94b33ad57c7dbe75739f2f870258add3e5673001433c241051398e3"
+  },
+  {
+    "path": "Source/SharedMemoryCameraWriter.h",
+    "sha256": "8ef6fc622592acfe6ed1d10b4d4015cca8231af949810233ef9c750eff093763"
+  },
+  {
+    "path": "Source/PIPCamera.cpp",
+    "sha256": "779f9143bb72288b867603e0a5dd34d7f7ac0389f778b90a7fd0697e042656f9"
+  },
+  {
+    "path": "Source/PIPCamera.h",
+    "sha256": "b7074d32fe03a0fc494cd8ba45ce10de8679b60bf45bf2ea10a6c1131dcf2e28"
+  },
+  {
+    "path": "Source/AirSimCaptureVisibility.h",
+    "sha256": "ade0efffc02f20e99d5fa73c25a1fc4f73f95c6dc059bd2d7c0e73cf6c3e66bf"
+  },
+  {
+    "path": "Source/RenderRequest.cpp",
+    "sha256": "6ee55d9e965df178a5cb84de46bd1de137bac4f2790bef01db9f56a9cea4f5b8"
+  },
+  {
+    "path": "Source/RenderRequest.h",
+    "sha256": "6f3c8437a53e3bfac563f48858fe9afa9a9b2434317ca7abfe804f4bd714bc2d"
+  },
+  {
+    "path": "Source/UnrealSensors/UnrealLidarSensor.cpp",
+    "sha256": "45e2c71cb5134a17e21537cb5d6e9e9c2f3946ee401c371b1ac13a0cdf5dcb95"
+  },
+  {
+    "path": "Source/UnrealSensors/UnrealLidarSensor.h",
+    "sha256": "5991ffdc38a8a744f9c24f25e5c79ab5a62cd33e48feffa872dfec058df06dc9"
+  },
+  {
+    "path": "Source/UnrealSensors/LidarSharedMemoryWriter.cpp",
+    "sha256": "11f6a924f92c747996b69ae4061d7331185cf76430babf0dce52da9e319e088c"
+  },
+  {
+    "path": "Source/UnrealSensors/LidarSharedMemoryWriter.h",
+    "sha256": "739782c8b96379533a24ae36daaecdd72b2c87cc4f7d23635612fe40207aaa8a"
+  },
+  {
+    "path": "Source/UnrealSensors/LidarIdentitySharedMemoryWriter.cpp",
+    "sha256": "69d167d0955373e9543ad14079ab6410f8ee393f5d8e3e9c8a4447092109769d"
+  },
+  {
+    "path": "Source/UnrealSensors/LidarIdentitySharedMemoryWriter.h",
+    "sha256": "bb33a16c224fbcb6f18d420f2772023960733d12e5c7df44d12c246847bf1559"
+  },
+  {
+    "path": "Source/AirLib/include/sensors/lidar/LidarSimple.hpp",
+    "sha256": "c45611cfc5a17b0aae954c77bdd37f158388d69ff948ba5294ce11f3bad2f3f5"
+  },
+  {
+    "path": "Source/AirLib/include/sensors/lidar/LidarSimpleParams.hpp",
+    "sha256": "0d26eb39a9a061b1c178a674e8a4e658ce47a323f5c15fd93ca678a2beeab031"
+  },
+  {
+    "path": "Source/AirLib/include/common/common_utils/ScheduledExecutor.hpp",
+    "sha256": "b40faf5b260702698337cc785d3389cc3e6d16a5b51bd7d7016b08277fb0ee91"
+  },
+  {
+    "path": "Source/AirLib/include/physics/PhysicsWorld.hpp",
+    "sha256": "5d00a90aa7237f8e00371636220efef98965e43530973acb25d1b57bc6773d72"
+  },
+  {
+    "path": "Source/AirLib/include/physics/World.hpp",
+    "sha256": "8e7dd798032f1e7a4b13478bbb895b31ef22f49f7e7c85ca9eccac54c29e7ab7"
+  },
+  {
+    "path": "Source/SimMode/SimModeWorldBase.cpp",
+    "sha256": "b88291b45ab7262f9ab5299393ad2a7475acef593e7e3b10e8fa7d3d52c859cc"
+  },
+  {
+    "path": "Source/UnrealSensors/UnrealSensorFactory.cpp",
+    "sha256": "ab83e950f2719c051136ba45a7c1c0f8d4d882756a4e3843fde0efc99277b2af"
+  },
+  {
+    "path": "Source/UnrealSensors/UnrealImuSensor.cpp",
+    "sha256": "592827c74e5b9d66be91a873ad56b888cd77058b4b23541f3f77f9ab2906ef08"
+  },
+  {
+    "path": "Source/UnrealSensors/UnrealImuSensor.h",
+    "sha256": "34cf41fd074b4647131637c41df4e3c9ea26c6d3dad3af4690d59d31637c0999"
+  }
+]

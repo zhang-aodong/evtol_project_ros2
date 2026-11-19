@@ -1,0 +1,36 @@
+{
+  "task": "semantic",
+  "classes": {
+    "0": "background",
+    "1": "aircraft",
+    "2": "high_rise",
+    "3": "pedestrian",
+    "4": "ground",
+    "5": "runway",
+    "6": "drone"
+  },
+  "sha256": "a123be5cffe056ecc924691a37f9ab6193427eeaed848941b5e62025dc38a1e4",
+  "selected_on": "Held-out contiguous time-block validation class 6 IoU, epoch 7",
+  "training_audit": {
+    "sources": [
+      {
+        "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.work\\perception_recall\\training_raw",
+        "images": {
+          "train": 571,
+          "val": 101
+        }
+      },
+      {
+        "source": "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.work\\perception_recall\\training_raw_radial",
+        "images": {
+          "train": 937,
+          "val": 228
+        }
+      }
+    ],
+    "resize": "Full 512px images, no object-enlarging crops",
+    "split": "Contiguous 15-second blocks, fifth block validation. Separate live original-route acceptance.",
+    "truth_offline_only": true
+  },
+  "truth_used_only_offline": true
+}

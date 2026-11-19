@@ -1,0 +1,13 @@
+{
+  "weights": "best.pt",
+  "source": "evtol_realtime_uav/model/best.pt",
+  "sha256": "8e15841986e6c4a16458aca83cad757a04f7eb76ed00e169c0c2e28340de3e98",
+  "task": "semantic",
+  "classes": {"0": "background", "1": "aircraft", "2": "high_rise", "3": "pedestrian", "4": "ground", "5": "runway", "6": "drone"},
+  "runtime": "semantic_runtime/ultralytics",
+  "runtime_origin": "yolo_seg/.worktrees/yolo26-semantic/ultralytics",
+  "runtime_license": "semantic_runtime/LICENSE (AGPL-3.0)",
+  "python": "3.11",
+  "dependencies": "../environment/requirements-model.txt",
+  "note": "Runtime source is shipped with this workspace. Do not replace it with stock pip ultralytics."
+}

@@ -1,0 +1,47 @@
+# Migrated from evtol_realtime_uav/config/default.yaml. Never commands Drone1.
+interference_drones:
+  enabled: true
+  takeoff_stagger_s: 1.0
+  takeoff_timeout_s: 20.0
+  move_timeout_s: 30.0
+  rpc_timeout_s: 40.0
+  waypoint_tolerance_m: 0.5
+  land_on_stop: true
+  agents:
+    - vehicle_name: Drone2
+      spawn_offset_ned_m: [30.0, 0.0, 0.0]
+      coordinate_mode: relative_heading
+      speed_mps: 3.0
+      repeat: 0
+      hold_s: 0.0
+      waypoints_frd_m: [[30.0, 0.0, -10.0]]
+    - vehicle_name: Drone3
+      spawn_offset_ned_m: [40.0, 0.0, 0.0]
+      coordinate_mode: relative_heading
+      speed_mps: 3.0
+      repeat: 0
+      waypoints_frd_m: [[40.0, 1.0, -10.0]]
+    - vehicle_name: Drone4
+      spawn_offset_ned_m: [50.0, 0.0, 0.0]
+      coordinate_mode: relative_heading
+      speed_mps: 3.0
+      repeat: 0
+      waypoints_frd_m: [[50.0, 0.0, -10.0]]
+    - vehicle_name: Drone5
+      spawn_offset_ned_m: [60.0, 0.0, 0.0]
+      coordinate_mode: relative_heading
+      speed_mps: 3.0
+      repeat: 0
+      waypoints_frd_m: [[60.0, 0.0, -11.0]]
+pedestrians:
+  enabled: true
+  update_rate_hz: 30.0
+  forward_yaw_offset_deg: -90.0
+  teleport: true
+  agents:
+    - name: Pedestrian_2
+      speed_mps: 1.0
+      loop: true
+      coordinate_mode: relative_initial
+      hold_s: 0.0
+      waypoints: [[8.0, 0.0, 0.0], [0.0, 0.0, 0.0]]

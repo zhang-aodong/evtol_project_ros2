@@ -1,0 +1,5 @@
+std_msgs/Header header
+string session_id
+string source_frame
+geometry_msgs/Point source_origin_enu
+geometry_msgs/Quaternion initial_orientation
