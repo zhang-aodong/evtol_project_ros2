@@ -31,6 +31,8 @@ class ModelClient:
         env['PATH']=os.pathsep.join([str(Path(python).parent/p) for p in ('','Library/bin','Scripts')]+[env['PATH']])
         self.process=subprocess.Popen([python,'-u',str(worker),'--weights',str(project_path(c,m['weights'])),
             '--vendor',str(project_path(c,m['vendor'])),'--device',str(m['device']),'--imgsz',str(m['imgsz']),
+            '--task',str(m.get('task','semantic')),'--confidence',str(m.get('confidence',.25)),
+            '--iou',str(m.get('iou',.5)),'--max-det',str(m.get('max_det',128)),
             '--parent-pid',str(os.getpid()),'--tile-rows',str(m.get('tile_rows',1)),'--tile-cols',str(m.get('tile_cols',1))],
             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=None,text=True,encoding='utf8',env=env,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
@@ -60,6 +62,7 @@ class ModelClient:
         self.process.stdin.write(json.dumps(dict(sequence=sequence,height=h,width=w,shm=self.mapping.name))+'\n');self.process.stdin.flush()
         response=self.responses.get(timeout=self.timeout)
         if response.get('error') or response.get('sequence')!=sequence:raise RuntimeError(str(response))
+        if self.info['task']=='detect':return response['detections'],response['ms']
         mask=np.ndarray((h,w),np.int32,buffer=self.mapping.buf,offset=h*w*3).copy()
         return mask,response['ms']
 

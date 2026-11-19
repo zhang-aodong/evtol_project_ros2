@@ -15,8 +15,13 @@ state:
   origin_file: data/session_origin.json
   timeout_s: 0.3
 model:
+  task: detect
   python: ''
-  weights: models/best.pt
+  weights: models/drone_detection.pt
+  confidence: 0.25
+  iou: 0.5
+  max_det: 128
+  class_map: {0: 6}  # checkpoint drone=0 -> canonical ROS drone=6
   vendor: models/semantic_runtime
   device: '0'
   imgsz: 640
@@ -66,6 +71,8 @@ detection:
   target_class_ids:
   - 3
   - 6
+  box_min_lidar_points: 3
+  box_roi_padding_px: 4
   min_lidar_points: 3
   min_mask_pixels: 20
   cluster_radius_m: 0.8
@@ -166,14 +173,14 @@ ue_detection_boxes:
 # Independent RGB-only perception coverage; semantic truth is never an input.
 surround:
   enabled: true
-  weights: models/surround_semantic.pt
+  weights: models/drone_detection.pt
   front_diagnostic_inference: false
   state_sample_hz: 50.0
   width: 768
   height: 768
   horizontal_fov_deg: 100.0
-  imgsz: 768
-  max_hz: 6.0
+  imgsz: 1024
+  max_hz: 8.0
   max_age_s: 0.35
   min_mask_pixels: 6
   min_lidar_points: 2

@@ -1,0 +1,22 @@
+﻿{
+    "weights":  "drone_detection.pt",
+    "classes":  {
+                    "0":  "drone"
+                },
+    "note":  "Existing trained detector reused. Offline synthetic test is not a guarantee of runtime 95% timely detection.",
+    "training":  {
+                     "imgsz":  1024,
+                     "best_epoch":  27,
+                     "completed_epochs":  37
+                 },
+    "canonical_class_map":  {
+                                "0":  6
+                            },
+    "runtime_note":  "Existing bundled Ultralytics supports detection; no semantic model is loaded in detection mode.",
+    "source_checkpoint":  "D:\\ZAD_Files\\evtol_files\\evtol_realtime_uav\\.training_run\\run_20261118\\training\\yolo26n_drone_b32\\weights\\best.pt",
+    "sha256":  "dcb94c97609352313840809dd93b2f74034be9e43e191b3239afc942da919279",
+    "task":  "detect",
+    "model":  "YOLO26n",
+    "runtime":  "semantic_runtime/ultralytics",
+    "confidence":  0.25
+}

@@ -452,7 +452,7 @@ class Engine:
                     v=self.telemetry.get('diagnostics',{}).get('/'+c['namespace']+'/surround_vision',{})
                     surround_ready=(v.get('level')==0 and time.time()-v.get('received',0)>0
                         and time.time()-v.get('received',0)<3. and int(v.get('values',{}).get('samples',0))>0)
-            need_front=not c.get('surround',{}).get('enabled',False) or c['surround'].get('front_diagnostic_inference',False)
+            need_front=c['model'].get('task')!='detect' and (not c.get('surround',{}).get('enabled',False) or c['surround'].get('front_diagnostic_inference',False))
             if (not need_front or self.vision_ready(c['namespace'])) and surround_ready:
                 if stable is None:stable=time.monotonic()
                 if time.monotonic()-stable>=2.:return

@@ -4,6 +4,22 @@ import numpy as np
 
 
 def validate_config(c):
+    model=c['model']
+    if model.get('task','semantic') not in ('semantic','detect'):raise ValueError('Invalid model.task')
+    if model.get('task')=='detect':
+        if not c.get('surround',{}).get('enabled',False):raise ValueError('Detection mode requires the surround camera stack')
+        for key in ('confidence','iou'):
+            value=model.get(key)
+            if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value) or not 0<value<=1:
+                raise ValueError('Invalid model.'+key)
+        if type(model.get('max_det')) is not int or not 1<=model['max_det']<=128:raise ValueError('Invalid model.max_det')
+        mapping=model.get('class_map')
+        if not isinstance(mapping,dict) or not mapping or any(type(k) is not int or k<0 or type(v) is not int or v!=6 for k,v in mapping.items()):
+            raise ValueError('Detection class_map must explicitly map checkpoint drone IDs to canonical class 6')
+        if type(c['detection'].get('box_min_lidar_points')) is not int or not 2<=c['detection']['box_min_lidar_points']<=50:
+            raise ValueError('Invalid detection.box_min_lidar_points')
+        padding=c['detection'].get('box_roi_padding_px')
+        if type(padding) is not int or not 0<=padding<=16:raise ValueError('Invalid detection.box_roi_padding_px')
     s=c.get('surround',{})
     if s.get('enabled',False):
         if len(s['cameras'])!=6 or len(set(v['name'] for v in s['cameras']))!=6:

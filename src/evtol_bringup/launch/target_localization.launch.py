@@ -21,8 +21,10 @@ def processes(context):
     import yaml
     settings=yaml.safe_load(Path(config).read_text(encoding='utf-8-sig'))
     if settings.get('surround',{}).get('enabled',False):
-        if not settings['surround'].get('front_diagnostic_inference',False):specs=[s for s in specs if s[0]!='vision']
-        specs=[(n,'evtol_targeting.surround_fusion' if n=='localizer' else m,x) for n,m,x in specs]
+        detect=settings['model'].get('task')=='detect'
+        if detect or not settings['surround'].get('front_diagnostic_inference',False):specs=[s for s in specs if s[0]!='vision']
+        fusion='evtol_targeting.detection_fusion' if detect else 'evtol_targeting.surround_fusion'
+        specs=[(n,fusion if n=='localizer' else m,x) for n,m,x in specs]
         specs.insert(0,('perception_lidar','evtol_simulation.perception_lidar',[]))
         if settings['surround'].get('roi_lidar',False):specs.insert(0,('roi_lidar','evtol_simulation.roi_lidar',[]))
         specs.insert(next(i for i,s in enumerate(specs) if s[0]=='localizer'),('surround_vision','evtol_targeting.surround_vision',[]))

@@ -35,6 +35,7 @@ class Bridge(Node):
                 'five_ga/observations', 'ground_truth/odometry', 'ground_truth/local_odometry',
                 'state/odometry','state/status','perception/semantic_preview/compressed',
                 'perception/surround/rgb/compressed','perception/surround/semantic_preview/compressed',
+                'perception/surround/detections','perception/surround/detections_preview/compressed',
                 'perception/lidar/points',
                 'perception/targets_measurements','perception/tracks','perception/markers',
                 'perception/lidar_obstacles','perception/lidar_obstacle_markers',

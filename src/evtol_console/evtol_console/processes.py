@@ -50,8 +50,10 @@ def node_specs(c,config,simconfig,run):
         ('vision','evtol_targeting.vision_node',[]),('localizer','evtol_targeting.localizer_node',[]),
         ('safety','evtol_safety.node',[]),('gateway','evtol_safety.gateway',['--execute'] if run['execute'] else [])]
     if c.get('surround',{}).get('enabled',False):
-        if not c['surround'].get('front_diagnostic_inference',False):algorithms=[s for s in algorithms if s[0]!='vision']
-        algorithms=[(name, 'evtol_targeting.surround_fusion' if name=='localizer' else module,extra) for name,module,extra in algorithms]
+        detect=c['model'].get('task')=='detect'
+        if detect or not c['surround'].get('front_diagnostic_inference',False):algorithms=[s for s in algorithms if s[0]!='vision']
+        fusion='evtol_targeting.detection_fusion' if detect else 'evtol_targeting.surround_fusion'
+        algorithms=[(name, fusion if name=='localizer' else module,extra) for name,module,extra in algorithms]
         algorithms.insert(0,('perception_lidar','evtol_simulation.perception_lidar',[]))
         if c['surround'].get('roi_lidar',False):algorithms.insert(0,('roi_lidar','evtol_simulation.roi_lidar',[]))
         algorithms.insert(next(i for i,s in enumerate(algorithms) if s[0]=='localizer'),('surround_vision','evtol_targeting.surround_vision',[]))

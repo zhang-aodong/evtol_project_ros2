@@ -35,6 +35,9 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--weights',required=True);p.add_argument('--vendor',required=True)
     p.add_argument('--imgsz',type=int,default=640);p.add_argument('--device',default='0')
     p.add_argument('--tile-rows',type=int,default=1);p.add_argument('--tile-cols',type=int,default=1)
+    p.add_argument('--task',choices=['detect','semantic'],default='semantic')
+    p.add_argument('--confidence',type=float,default=.25);p.add_argument('--iou',type=float,default=.5)
+    p.add_argument('--max-det',type=int,default=128)
     p.add_argument('--parent-pid',type=int,default=0);opts=p.parse_args()
     watch_parent(opts.parent_pid)
     sys.path.insert(0,opts.vendor)
@@ -45,7 +48,7 @@ def main():
         from ultralytics import YOLO
         torch.set_num_threads(1);cv2.setNumThreads(1)
         model=YOLO(opts.weights)
-        if model.task!='semantic':raise ValueError('The supplied best.pt must be the project semantic model')
+        if model.task!=opts.task:raise ValueError('Model task mismatch: expected '+opts.task+', got '+model.task)
         device=opts.device
         if device!='cpu' and not torch.cuda.is_available():
             print('CUDA unavailable: using CPU; real-time performance must be revalidated',file=sys.stderr);device='cpu'
@@ -64,7 +67,20 @@ def main():
                 if h%rows or w%cols:raise ValueError('Mosaic must contain equal complete camera faces')
                 th,tw=h//rows,w//cols
                 images=[np.ascontiguousarray(image[y*th:(y+1)*th,x*tw:(x+1)*tw]) for y in range(rows) for x in range(cols)]
-                results=model.predict(images,imgsz=opts.imgsz,device=device,half=half,verbose=False)
+                results=model.predict(images,imgsz=opts.imgsz,device=device,half=half,verbose=False,
+                    conf=opts.confidence,iou=opts.iou,max_det=opts.max_det)
+                if opts.task=='detect':
+                    detections=[]
+                    for i,result in enumerate(results):
+                        boxes=result.boxes
+                        if boxes is None:continue
+                        for xyxy,conf,cls in zip(boxes.xyxy.detach().cpu().tolist(),
+                                boxes.conf.detach().cpu().tolist(),boxes.cls.detach().cpu().tolist()):
+                            detections.append(dict(view_index=i,source_class_id=int(cls),confidence=float(conf),xyxy=xyxy))
+                    print(json.dumps(dict(sequence=request['sequence'],detections=detections,
+                        ms=(time.perf_counter()-begun)*1000)),flush=True,file=sys.__stdout__)
+                    del image
+                    continue
                 mask=np.empty((h,w),np.int32)
                 for i,result in enumerate(results):
                     semantic=getattr(result,'semantic_mask',None)
