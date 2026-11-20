@@ -58,7 +58,7 @@ export function mountConsole(host, transport) {
   </div><div class="card"><h2>独立定位误差（与真值同时间戳对齐）</h2><div class="status-grid" id="localization-metrics"></div>
   <div class="row"><label>曲线时间窗口<select id="localization-window"><option value="60">最近 60 秒</option><option value="300">最近 5 分钟</option><option value="0">全部已缓存（最多 10 分钟）</option></select></label><div class="buttons"><button id="localization-pause">暂停曲线</button><button id="localization-clear">清空曲线</button><button id="localization-export">导出误差 CSV</button></div></div>
   <p id="localization-curve-status" role="status">等待独立误差评价数据</p>
-  <div class="grid" id="localization-charts">${[['x','X / 东向误差','#78b7ff'],['y','Y / 北向误差','#f0ba68'],['z','Z / 高度误差','#cc9bff'],['3d','三维位置误差','#87d6ce']].map(([key,title,color])=>`<div><h3 style="color:${color}">${title} <span data-localization-value="${key}">—</span></h3><svg id="localization-chart${key==='3d'?'':'-'+key}" data-error-chart="${key}" viewBox="0 0 680 240" aria-label="${title}曲线" role="img" style="min-height:190px;aspect-ratio:680/240"></svg><small data-localization-hover="${key}">移动鼠标查看采样时刻与误差</small></div>`).join('')}</div>
+  <div id="localization-charts" style="display:grid;grid-template-columns:minmax(0,1fr);gap:24px">${[['3d','三维位置误差','#87d6ce'],['x','X / 东向误差','#78b7ff'],['y','Y / 北向误差','#f0ba68'],['z','Z / 高度误差','#cc9bff']].map(([key,title,color])=>`<div><h3 style="color:${color}">${title} <span data-localization-value="${key}">—</span></h3><svg id="localization-chart${key==='3d'?'':'-'+key}" data-error-chart="${key}" viewBox="0 0 680 240" preserveAspectRatio="none" aria-label="${title}曲线" role="img" style="height:clamp(300px,40vh,480px);min-height:300px"></svg><small data-localization-hover="${key}">移动鼠标查看采样时刻与误差</small></div>`).join('')}</div>
   <p>X、Y、Z 为同一真值历元的“估计 − 真值”，保留正负号；三维误差为 √(X²+Y²+Z²)，单位 m。横轴为距会话起点的仿真时间（s），不使用真值拟合轨迹。数据过期时保留历史并停止追加，采样中断处断线。曲线约 10 Hz，缓存最多 6000 点；完整逐历元误差仍保存于评价文件。</p>
   <h3>恢复、采用观测与逐基站状态</h3><pre id="localization-details"></pre>
   <p>3D 面板叠加 /drone1/localization/path 与 /drone1/localization/truth_path；Plot 可使用 /drone1/localization/error_3d 和 /drone1/localization/error_enu.vector.x/y/z。traveled_path 始终代表下游所选状态。</p></div></section>
@@ -245,7 +245,7 @@ export function mountConsole(host, transport) {
   }
   const localizationHistory=[];
   let localizationSession=null,localizationOrigin=null,localizationLastStamp=0,localizationClearStamp=0,localizationPaused=false,localizationView=[],localizationChartData={};
-  const localizationSeries=[['x',0,'#78b7ff'],['y',1,'#f0ba68'],['z',2,'#cc9bff'],['3d',3,'#87d6ce']];
+  const localizationSeries=[['3d',3,'#87d6ce'],['x',0,'#78b7ff'],['y',1,'#f0ba68'],['z',2,'#cc9bff']];
   function drawLocalizationCharts(){
     const last=localizationView.at(-1),windowS=Number($('#localization-window').value);
     const end=last?(last.stamp-localizationOrigin)*1e-9:windowS||60;
