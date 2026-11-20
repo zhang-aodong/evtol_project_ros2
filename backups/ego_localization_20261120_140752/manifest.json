@@ -1,0 +1,5 @@
+[
+  "tests\\probe_ego_localization.py",
+  "src\\evtol_localization\\evtol_localization\\node.py",
+  "src\\evtol_safety\\evtol_safety\\gateway.py"
+]

@@ -1,0 +1,5 @@
+{
+  "source": "自机定位_ROS2移植交接包_含Camera_IMU.zip",
+  "sha256": "71cb4543872828c02ae52d491527761dfbd1bb29738e5502401a1adef7db3f87",
+  "scope": "Sections 1-5; VIO deferred by user. Offline reference is not executed by ROS."
+}

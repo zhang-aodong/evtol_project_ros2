@@ -63,6 +63,14 @@ class ConfigurationContracts(unittest.TestCase):
         for name in ['config/targeting.yaml','config/actors.yaml','config/machine.local.json','src/evtol_simulation/config/airsim.navigation_2k.json']:
             target=self.root/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,target)
         self.d=defaults(self.root)
+    def test_fused_delay_is_included_in_scan_budget_and_braking(self):
+        from evtol_safety.velocity import LocalVelocityAvoidance
+        self.d['localization']['state_source']='fused'
+        _,c,_,_,_=artifacts(self.d,self.root)
+        self.assertGreaterEqual(c['safety']['cloud_timeout_s'],c['localization']['reorder_s']+.1)
+        safe=LocalVelocityAvoidance(c['safety']['local_velocity'],c['safety']['cloud_timeout_s'],c['control']['duration_s'],0.)
+        shorter=LocalVelocityAvoidance(c['safety']['local_velocity'],.2,c['control']['duration_s'],0.)
+        self.assertLess(safe.speed_limit,shorter.speed_limit)
     def test_count_controls_real_ue_vehicles_and_preserves_ego_sensor_settings(self):
         self.d['actors']['count']=1;self.d['actors']['agents']=self.d['actors']['agents'][:1]
         d,c,scenario,ue,p=artifacts(self.d,self.root)

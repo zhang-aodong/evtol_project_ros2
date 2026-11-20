@@ -4,6 +4,10 @@ import numpy as np
 
 
 def validate_config(c):
+    if 'localization' in c or c['state']['source']=='fused':
+        from evtol_localization.options import options
+        localization=options(c.get('localization'))
+        if c['state']['source']=='fused' and not localization['enabled']:raise ValueError('Fused state requires enabled ego localization')
     if 'warnings' in c:
         from evtol_safety.warnings import validate_options
         validate_options(c['warnings'])

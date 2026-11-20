@@ -22,7 +22,7 @@ export function mountConsole(host, transport) {
   let draft=null,state=null,disposed=false,dirty=false,polling=false,previewTimer=null,dragging=null,activeTab='overview',collectionDraft=null,collectionTopics=[],clientEvents=[],observedOperations=new Map();
   const shell=document.createElement('div');shell.className='evtol';
   shell.innerHTML=`<style>${css}</style><header><h1>EVTOL 仿真控制台</h1><small>Windows · ROS 2 · UE / AirSim</small><span class="grow"></span><button class="danger" data-op="force_stop_all">强制结束 ROS + UE</button><span class="badge" id="connection">正在连接</span></header>
-  <nav>${[['overview','运行总览'],['ue','UE 启动'],['actors','障碍机'],['mission','本机飞行'],['experiment','避障实验'],['collection','数据采集'],['monitor','监控 / 日志']].map(([id,t])=>`<button data-tab="${id}">${t}</button>`).join('')}</nav>
+  <nav>${[['overview','运行总览'],['ue','UE 启动'],['actors','障碍机'],['mission','本机飞行'],['experiment','避障实验'],['localization','自机定位'],['collection','数据采集'],['monitor','监控 / 日志']].map(([id,t])=>`<button data-tab="${id}">${t}</button>`).join('')}</nav>
   <main><div class="buttons"><button id="import-config">从文件导入配置</button><input id="config-file" type="file" accept=".json,application/json" hidden><button id="export-config">导出当前编辑配置</button><button id="export-saved">导出已保存配置</button><button id="export-run">导出本次运行配置</button></div>
   <section data-page="overview"><div class="status-grid" id="metrics"></div><div class="grid" style="margin-top:14px"><div class="card"><h2>独立启动与停止</h2><p>① 编辑参数并保存 → ② 启动 UE，等待 AirSim 就绪 → ③ 启动 ROS 实验。</p><div class="buttons"><button class="primary" data-op="start_ue">启动 UE</button><button data-op="stop_ue">关闭 UE</button><button class="primary" data-op="start_ros">启动 ROS 实验</button><button data-op="stop_ros">停止 ROS</button><button class="danger" data-op="stop_all">停止全部</button><button data-op="cancel">取消当前启动</button></div><h3>ROS 启动选项</h3><label class="check"><input type="checkbox" data-bind="run.execute">执行飞行控制（关闭时仅观察）</label><label class="check"><input type="checkbox" data-bind="run.actors">启动障碍机 / 行人控制</label><label class="check"><input type="checkbox" data-bind="run.evaluate">发布目标真值并记录定位评估</label><label class="check"><input type="checkbox" data-bind="run.new_session">启动 ROS 时建立新的 ENU 原点会话</label><p class="hint">停止 ROS 会请求控制器停止和障碍机清理；关闭 UE 必须先停止 ROS。界面停止按钮仅管理本控制台启动的进程。</p></div><div class="card"><h2>本次运行</h2><div id="summary"></div><h3>最近操作</h3><div id="operations"></div></div></div></section>
   <section data-page="ue" hidden><div class="card"><h2>UE 程序与工程</h2><label>UE Editor 程序路径（.exe）<input data-bind="ue.editor" placeholder="D:\\Software\\Epic\\UE_4.27\\Engine\\Binaries\\Win64\\UE4Editor.exe"></label><label>UE 工程路径（.uproject）<input data-bind="ue.project"></label><label>AirSim 基础配置（项目相对路径或完整路径）<input data-bind="ue.settings"></label><div class="row"><label>运行方式<select id="visible"><option value="true">可视化窗口</option><option value="false">后台渲染</option></select></label><label>窗口宽度<input type="number" data-bind="ue.width" min="320" max="7680"></label><label>窗口高度<input type="number" data-bind="ue.height" min="240" max="4320"></label></div><p>相机和雷达仍使用原有共享内存设置。后台模式继续生成传感器数据；窗口尺寸不改变采集图像的分辨率。</p><div class="buttons"><button data-save class="primary">保存全部参数</button><button data-op="start_ue">启动 UE</button><button data-op="stop_ue">关闭 UE</button></div></div></section>
@@ -42,6 +42,26 @@ export function mountConsole(host, transport) {
   <div class="card"><h2>范围内真值与检测匹配</h2><div id="evaluation-targets"></div><p>3D 面板固定坐标设为 map_enu，添加 /evaluation/markers；蓝色半球线框为预警统计范围，绿色为检出、红色为漏检真值框。</p></div>
   <div class="card"><h2>双路实时预警</h2><div id="dual-warnings" class="status-grid"></div><div id="warning-targets"></div><p>雷达通道：实测离地高度超过 5 m 后，周围 5 m 内任意有效非自身回波预警。融合通道：前向 10 m 完整半球；位置/速度预测不使用障碍机真值。超时数据标为无效，不显示为安全。</p></div><div class="card"><h2>动态风险与冻结事件预警统计</h2><div id="warning-metrics" class="status-grid"></div><pre id="warning-details"></pre><p>真值 CPA 为当前运动趋势诊断，不用于闭环后反算协议准确率。填写 warning_events 冻结风险/安全交会标签后，才显示事件混淆矩阵。</p></div>
   </section>
+  <section data-page="localization" hidden>
+  <div class="card"><h2>自机多源融合定位</h2><div class="row">
+  <label class="check"><input type="checkbox" data-bind="localization.enabled">启用自机定位</label>
+  <label>在线模式<select data-bind="localization.mode"><option value="gnss_imu">GNSS + IMU</option><option value="gnss_imu_5g">GNSS + IMU + 逐站 5G-A</option></select></label>
+  <label>下游状态来源<select data-bind="localization.state_source"><option value="truth">真值控制，融合旁路评价</option><option value="fused">融合定位控制</option></select></label>
+  <label class="check"><input type="checkbox" data-bind="localization.evaluate">独立真值误差评价</label></div>
+  <p>坐标为会话 ENU，原点来自统一会话约定。滤波器只消费 IMU、GNSS 和可选 5G-A，不消费真值位姿。第一版航向初始化依赖仿真 IMU 的有效姿态；Camera+IMU 留作后续。定位开启后重新启动 ROS 生效。</p>
+  <div class="row"><label>排序等待 s<input type="number" step="0.01" data-bind="localization.reorder_s"></label><label>状态过期 s<input type="number" step="0.01" data-bind="localization.stale_s"></label><label>GNSS 标准差下限 m<input type="number" step="0.05" data-bind="localization.gnss_sigma_floor_m"></label><label>5G 标准差下限 m<input type="number" step="0.05" data-bind="localization.fiveg_sigma_floor_m"></label><label>5G 最低 RSRP dBm<input type="number" data-bind="localization.fiveg_min_rsrp_dbm"></label></div>
+  </div><div class="card"><h2>飞行中卫星异常与恢复</h2>
+  <div class="row"><label class="check"><input type="checkbox" data-bind="localization.gnss_fault.enabled">启用 GNSS 异常测试</label><label>时间基准<select data-bind="localization.gnss_fault.time_base"><option value="flight">本次飞行进入起飞阶段</option><option value="session">会话原点时刻（适合离线回放）</option></select></label><label>未列出时段<select data-bind="localization.gnss_fault.default_mode"><option value="normal">正常</option><option value="dropout">中断</option></select></label></div>
+  <p>每段使用 [start_s, end_s)，模式 normal=正常、dropout=屏蔽、no_fix=失锁、bias=ENU 位置偏置；时段必须有序且不重叠。默认 0–40 s 正常、40–60 s 中断、60 s 后自动恢复。仅影响估计器 GNSS 输入，原始话题与真值保留。</p>
+  <textarea id="gnss-fault-segments" rows="9" spellcheck="false" style="width:100%;background:#0f1825;color:#dbe5f2"></textarea><p id="gnss-fault-validation"></p>
+  <div class="buttons"><button id="gnss-fault-example">加载 40–60 s 中断示例</button><button class="primary" data-save>保存全部参数</button></div>
+  </div><div class="card"><h2>独立定位误差（与真值同时间戳对齐）</h2><div class="status-grid" id="localization-metrics"></div>
+  <div class="row"><label>曲线时间窗口<select id="localization-window"><option value="60">最近 60 秒</option><option value="300">最近 5 分钟</option><option value="0">全部已缓存（最多 10 分钟）</option></select></label><div class="buttons"><button id="localization-pause">暂停曲线</button><button id="localization-clear">清空曲线</button><button id="localization-export">导出误差 CSV</button></div></div>
+  <p id="localization-curve-status" role="status">等待独立误差评价数据</p>
+  <div class="grid" id="localization-charts">${[['x','X / 东向误差','#78b7ff'],['y','Y / 北向误差','#f0ba68'],['z','Z / 高度误差','#cc9bff'],['3d','三维位置误差','#87d6ce']].map(([key,title,color])=>`<div><h3 style="color:${color}">${title} <span data-localization-value="${key}">—</span></h3><svg id="localization-chart${key==='3d'?'':'-'+key}" data-error-chart="${key}" viewBox="0 0 680 240" aria-label="${title}曲线" role="img" style="min-height:190px;aspect-ratio:680/240"></svg><small data-localization-hover="${key}">移动鼠标查看采样时刻与误差</small></div>`).join('')}</div>
+  <p>X、Y、Z 为同一真值历元的“估计 − 真值”，保留正负号；三维误差为 √(X²+Y²+Z²)，单位 m。横轴为距会话起点的仿真时间（s），不使用真值拟合轨迹。数据过期时保留历史并停止追加，采样中断处断线。曲线约 10 Hz，缓存最多 6000 点；完整逐历元误差仍保存于评价文件。</p>
+  <h3>恢复、采用观测与逐基站状态</h3><pre id="localization-details"></pre>
+  <p>3D 面板叠加 /drone1/localization/path 与 /drone1/localization/truth_path；Plot 可使用 /drone1/localization/error_3d 和 /drone1/localization/error_enu.vector.x/y/z。traveled_path 始终代表下游所选状态。</p></div></section>
   <section data-page="collection" hidden>
   <div class="card"><h2>独立数据采集</h2><p>先启动 ROS 传感器发布，再按需开始采集。两种模式每次创建独立目录，可在仿真运行中开始和停止，不改变飞行任务。</p>
   <label>保存根目录（项目相对路径或完整路径）<input id="collect-output" data-collect="output_dir" placeholder="data/collections"></label>
@@ -137,7 +157,7 @@ export function mountConsole(host, transport) {
     $('#warning-metrics').innerHTML=w?[['预警精确率',percent(w.precision)],['风险召回率',percent(w.recall)],['漏警率',percent(w.miss_rate)],['误警率 FPR',percent(w.false_alarm_rate)],['误报占预警比',percent(w.false_discovery_rate)],['事件计数',JSON.stringify(w.counts)]].map(([k,v])=>`<div class="metric"><small>${esc(k)}</small><b>${esc(v)}</b></div>`).join(''):'<p>尚未配置冻结事件标签，不计算协议级比率。</p>';
   }
   const mark=()=>{dirty=true;$('#dirty').textContent='未保存';};
-  const get=(path)=>path.split('.').reduce((o,k)=>o[k],draft);
+  const get=(path)=>path.split('.').reduce((o,k)=>o?.[k],draft);
   const set=(path,value)=>{const parts=path.split('.');let o=draft;for(const k of parts.slice(0,-1))o=o[k];o[parts.at(-1)]=value;mark();};
   async function call(action,payload={}){
     const response=await transport({action,payload});
@@ -199,6 +219,7 @@ export function mountConsole(host, transport) {
   }
   function populate(){
     $$('[data-bind]').forEach(el=>{const v=get(el.dataset.bind);if(el.type==='checkbox')el.checked=v;else el.value=v;});
+    $('#gnss-fault-segments').value=JSON.stringify(draft.localization?.gnss_fault.segments||[],null,2);
     optionEditors();$('#log-filter').value=draft.ui.log_filter;$('#log-errors').checked=draft.ui.log_errors;$('#log-follow').checked=draft.ui.log_follow;$('#default-distance').value=draft.ui.profile_default_distance_m;
     $('#visible').value=String(draft.ue.visible);actors();pointEditor($('#ego-points'),draft.mission.waypoints_enu_m);profileTable();mode();refreshPreview();
   }
@@ -217,11 +238,91 @@ export function mountConsole(host, transport) {
     const actorFresh=s.ros_running&&Date.now()/1000-(t.actors_received_wall||0)<3;
     $('#actor-states').innerHTML=table(['名称','状态','航点','详情'],Object.entries(t.actors?.actors||{}).map(([name,a])=>`<tr><td>${esc(name)}</td><td>${esc(a.phase)}${actorFresh?'':'（状态已过期）'}</td><td>${esc(a.waypoint_index||'—')} / ${esc(a.waypoint_count||'—')}</td><td>${esc(JSON.stringify(a))}</td></tr>`));
     for(const op of s.operations){const before=observedOperations.get(op.id);if(before!==op.state){observedOperations.set(op.id,op.state);clientLog(`${op.action} · ${op.state} · ${op.message||''}`,op.state==='failed'?'ERROR':'INFO');}}
-    evaluation(t);renderLogs();renderCollectionStatus();
+    evaluation(t);renderLocalization(t);renderLogs();renderCollectionStatus();
     $$('[data-op]').forEach(b=>b.disabled=b.dataset.op==='force_stop_all'?!!s.force_running:b.dataset.op==='cancel'?!s.busy:s.busy||s.force_running||(dirty&&b.dataset.op.startsWith('start')));
     $$('[data-save]').forEach(b=>b.disabled=s.busy||s.ros_running);
     if(activeTab==='mission')chart();
   }
+  const localizationHistory=[];
+  let localizationSession=null,localizationOrigin=null,localizationLastStamp=0,localizationClearStamp=0,localizationPaused=false,localizationView=[],localizationChartData={};
+  const localizationSeries=[['x',0,'#78b7ff'],['y',1,'#f0ba68'],['z',2,'#cc9bff'],['3d',3,'#87d6ce']];
+  function drawLocalizationCharts(){
+    const last=localizationView.at(-1),windowS=Number($('#localization-window').value);
+    const end=last?(last.stamp-localizationOrigin)*1e-9:windowS||60;
+    const start=last?Math.max((localizationView[0].stamp-localizationOrigin)*1e-9,windowS?end-windowS:0):0;
+    const finish=Math.max(end,start+.1),span=finish-start;
+    const view=localizationView.filter(p=>(p.stamp-localizationOrigin)*1e-9>=start);
+    for(const [key,index,color] of localizationSeries){
+      const svg=$(`[data-error-chart="${key}"]`),values=view.map(p=>p.values[index]);
+      const peak=Math.max(.05,...values.map(Math.abs))*1.15,lo=key==='3d'?0:-peak,hi=peak;
+      const px=p=>62+(((p.stamp-localizationOrigin)*1e-9-start)/span)*598;
+      const py=v=>194-(v-lo)/(hi-lo)*164;
+      localizationChartData[key]={view,px,py,start,span};
+      let markup='';
+      for(let tick=0;tick<=4;tick++){
+        const value=lo+(hi-lo)*tick/4,y=py(value),time=start+span*tick/4,x=62+598*tick/4;
+        markup+=`<line x1="62" y1="${y}" x2="660" y2="${y}" stroke="${Math.abs(value)<1e-12?'#768ba3':'#273b50'}"/><text x="55" y="${y+4}" text-anchor="end" fill="#9fb4ca" font-size="12">${value.toFixed(3)}</text><line x1="${x}" y1="30" x2="${x}" y2="194" stroke="#273b50"/><text x="${x}" y="213" text-anchor="middle" fill="#9fb4ca" font-size="12">${time.toFixed(1)}</text>`;
+      }
+      markup+='<text x="8" y="17" fill="#9fb4ca" font-size="12">误差 / m</text><text x="660" y="233" text-anchor="end" fill="#9fb4ca" font-size="12">会话时间 / s</text>';
+      let part=[];const segments=[];
+      for(const point of view){
+        if(part.length&&point.stamp-part.at(-1).stamp>1e9){segments.push(part);part=[];}
+        part.push(point);
+      }
+      if(part.length)segments.push(part);
+      markup+=segments.map(segment=>segment.length===1?`<circle cx="${px(segment[0])}" cy="${py(segment[0].values[index])}" r="2.5" fill="${color}"/>`:`<polyline data-error-line="${key}" points="${segment.map(p=>`${px(p)},${py(p.values[index])}`).join(' ')}" fill="none" stroke="${color}" stroke-width="2"/>`).join('');
+      if(!view.length)markup+='<text x="350" y="110" text-anchor="middle" fill="#9fb4ca">等待有效误差数据</text>';
+      svg.innerHTML=markup;
+    }
+  }
+  function renderLocalization(t){
+    const m=t.localization_metrics,s=t.localization_status||m?.estimator,c=m?.current,summary=m?.summary;
+    const fresh=!!state.ros_running&&Date.now()/1000-(t.localization_metrics_received_wall||0)<2&&m?.valid&&c;
+    const number=v=>Number.isFinite(v)?v.toFixed(3):'—';
+    const cards=[['状态',s?.status||'等待输入'],['模式',s?.mode||'—'],...['X / 东向误差 m','Y / 北向误差 m','Z / 高度误差 m'].map((title,i)=>[title,fresh?number(c?.error_enu_m?.[i]):'过期 / 等待']),['当前三维误差 m',fresh?number(c?.error_3d_m):'过期 / 等待'],['RMSE 3D m',number(summary?.rmse_3d_m)],['P95 3D m',number(summary?.p95_3d_m)],['误差对齐覆盖率',Number.isFinite(summary?.coverage)?(summary.coverage*100).toFixed(1)+'%':'—'],['状态频率 Hz',number(s?.publish_hz)],['状态年龄 s',number(s?.state_age_s)],['GNSS 测试阶段',s?.gnss_fault_mode||'—']];
+    $('#localization-metrics').innerHTML=cards.map(([k,v])=>`<div class="metric"><small>${esc(k)}</small><b>${esc(v)}</b></div>`).join('');
+    $('#localization-details').textContent=JSON.stringify({summary,outage_end_errors:m?.outage_end_errors,recovery_events:m?.recovery_events,estimator:s},null,2);
+    const stamp=c?.stamp_ns;
+    if(m?.session_id&&(m.session_id!==localizationSession||(fresh&&Number.isFinite(stamp)&&stamp<localizationLastStamp))){
+      localizationSession=m.session_id;localizationOrigin=Number.isFinite(m.origin_stamp_ns)?m.origin_stamp_ns:null;
+      localizationHistory.length=0;localizationView=[];localizationLastStamp=0;localizationClearStamp=0;
+    }
+    if(fresh){
+      for(const row of [...(m.recent_errors||[]),c]){
+        if(!Number.isFinite(row?.stamp_ns)||!Array.isArray(row.error_enu_m)||row.error_enu_m.length!==3||!row.error_enu_m.every(Number.isFinite)||!Number.isFinite(row.error_3d_m)||row.error_3d_m<0)continue;
+        if(row.stamp_ns<=Math.max(localizationLastStamp,localizationClearStamp))continue;
+        if(localizationOrigin===null)localizationOrigin=row.stamp_ns;
+        if(localizationHistory.length&&row.stamp_ns-localizationHistory.at(-1).stamp<.099e9)continue;
+        localizationHistory.push({stamp:row.stamp_ns,values:[...row.error_enu_m,row.error_3d_m],phase:row.phase||''});
+        localizationLastStamp=row.stamp_ns;
+      }
+      while(localizationHistory.length>6000||localizationHistory.length>1&&localizationHistory.at(-1).stamp-localizationHistory[0].stamp>600e9)localizationHistory.shift();
+    }
+    if(!localizationPaused)localizationView=localizationHistory.slice();
+    for(const [key,index] of localizationSeries)$(`[data-localization-value="${key}"]`).textContent=fresh?number(index===3?c.error_3d_m:c.error_enu_m?.[index])+' m':'—';
+    $('#localization-curve-status').textContent=`${localizationPaused?'曲线已暂停，后台继续接收':fresh?'实时更新':'数据过期 / 等待，保留历史'} · 已缓存 ${localizationHistory.length} 点 · X=东，Y=北，Z=上`;
+    if(activeTab==='localization')drawLocalizationCharts();
+  }
+  $('#localization-window').onchange=drawLocalizationCharts;
+  $('#localization-pause').onclick=()=>{localizationPaused=!localizationPaused;$('#localization-pause').textContent=localizationPaused?'继续曲线':'暂停曲线';renderLocalization(state?.telemetry||{});};
+  $('#localization-clear').onclick=()=>{localizationClearStamp=state?.telemetry?.localization_metrics?.current?.stamp_ns||localizationLastStamp;localizationHistory.length=0;localizationView=[];drawLocalizationCharts();renderLocalization(state?.telemetry||{});};
+  $('#localization-export').onclick=()=>{
+    const rows=['session_id,stamp_ns,session_time_s,error_x_m,error_y_m,error_z_m,error_3d_m,gnss_phase',...localizationHistory.map(p=>[JSON.stringify(localizationSession),(p.stamp).toFixed(0),((p.stamp-localizationOrigin)*1e-9).toFixed(6),...p.values,p.phase].join(','))];
+    const blob=new Blob(['\uFEFF'+rows.join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='evtol-localization-errors.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
+  for(const [key,index] of localizationSeries){
+    const svg=$(`[data-error-chart="${key}"]`),label=$(`[data-localization-hover="${key}"]`);
+    svg.addEventListener('pointermove',event=>{
+      const data=localizationChartData[key];if(!data?.view.length)return;
+      const box=svg.getBoundingClientRect();if(!box.width)return;
+      const x=Math.max(62,Math.min(660,(event.clientX-box.left)/box.width*680));
+      const target=(data.start+(x-62)/598*data.span)*1e9+localizationOrigin;
+      const point=data.view.reduce((a,b)=>Math.abs(a.stamp-target)<Math.abs(b.stamp-target)?a:b);
+      label.textContent=`t=${((point.stamp-localizationOrigin)*1e-9).toFixed(3)} s · 误差=${point.values[index].toFixed(4)} m · GNSS=${point.phase||'—'}`;
+    });
+  }
+  $('#gnss-fault-segments').onchange=()=>{try{const value=JSON.parse($('#gnss-fault-segments').value);if(!Array.isArray(value))throw new Error('应为数组');set('localization.gnss_fault.segments',value);$('#gnss-fault-validation').textContent='时段已编辑；保存时检查范围与重叠。';}catch(e){$('#gnss-fault-validation').textContent='未采用：'+e.message;}};
+  $('#gnss-fault-example').onclick=()=>{set('localization.gnss_fault.segments',[{start_s:40,end_s:60,mode:'dropout',bias_enu_m:[0,0,0]}]);$('#gnss-fault-segments').value=JSON.stringify(draft.localization.gnss_fault.segments,null,2);};
   function collectionValue(path){return path.split('.').reduce((v,k)=>v?.[k],collectionDraft);}
   function collectionSet(path,value){const keys=path.split('.'),last=keys.pop();keys.reduce((v,k)=>v[k],collectionDraft)[last]=value;}
   function collectionForm(){
@@ -264,7 +365,7 @@ export function mountConsole(host, transport) {
   $('#collect-file').onchange=async()=>{try{const file=$('#collect-file').files?.[0];if(!file)return;if(file.size>1048576)throw new Error('配置文件不能超过 1 MB');collectionDraft=await call('validate_collection',JSON.parse(await file.text()));collectionForm();notice('采集配置已载入，尚未保存或启动');}catch(e){notice(e.message,true);}finally{$('#collect-file').value='';}};
   for(const mode of ['bag','dataset'])$('#collect-'+mode).onclick=async()=>{clientLog('按钮按下：开始采集 '+mode);try{const result=await call('start_collection',{mode,config:collectionDraft});clientLog('采集请求已接受，操作 ID '+result.operation_id);notice('已提交采集请求，请查看状态和日志');}catch(e){notice(e.message,true);clientLog('采集启动失败：'+e.message,'ERROR');}};
   $('#collect-stop').onclick=async()=>{clientLog('按钮按下：停止采集并保存');try{const result=await call('stop_collection');notice('正在停止并保存，操作 ID '+result.operation_id);}catch(e){notice(e.message,true);}};
-  $$('[data-tab]').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;$$('[data-page]').forEach(p=>p.hidden=p.dataset.page!==activeTab);$$('[data-tab]').forEach(t=>t.classList.toggle('active',t===b));if(activeTab==='mission')chart();});
+  $$('[data-tab]').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;$$('[data-page]').forEach(p=>p.hidden=p.dataset.page!==activeTab);$$('[data-tab]').forEach(t=>t.classList.toggle('active',t===b));if(activeTab==='mission')chart();if(activeTab==='localization')drawLocalizationCharts();});
   $$('[data-tab]')[0].classList.add('active');
   $$('[data-bind]').forEach(el=>el.oninput=()=>{if(!draft)return;set(el.dataset.bind,el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?null:Number(el.value)):el.value);if(el.dataset.bind==='mission.mode')mode();if(el.dataset.bind.startsWith('mission.'))refreshPreview();});
   $('#log-filter').oninput=()=>{draft.ui.log_filter=$('#log-filter').value;mark();renderLogs();};

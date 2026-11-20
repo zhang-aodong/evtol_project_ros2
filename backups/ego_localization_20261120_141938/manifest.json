@@ -1,0 +1,7 @@
+[
+  "scripts\\compare_localization_bag.py",
+  "src\\evtol_collection\\evtol_collection\\recorder.py",
+  "src\\evtol_localization\\evtol_localization\\eskf.py",
+  "src\\evtol_localization\\evtol_localization\\node.py",
+  "src\\evtol_localization\\evtol_localization\\stream.py"
+]

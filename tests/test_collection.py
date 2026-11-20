@@ -93,6 +93,10 @@ class RosBagIntegration(unittest.TestCase):
                 with tempfile.TemporaryDirectory() as tmp:
                     o=defaults();o['bag'].update(topics=['/collection_test/text','/collection_test/latch'],storage_id=storage,use_sim_time=False)
                     node=Collector(o,'bag',tmp,'bag_test');executor.add_node(pub);executor.add_node(node)
+                    # Simulate the DDS race: names are visible before endpoint QoS.
+                    from unittest.mock import patch
+                    with patch.object(node,'get_topic_names_and_types',return_value=[(t,['std_msgs/msg/String']) for t in o['bag']['topics']]),patch.object(node,'get_publishers_info_by_topic',return_value=[]):
+                        node.discover();self.assertFalse(node.ready);self.assertEqual(node.state,'waiting_publishers')
                     end=time.monotonic()+5
                     while not node.ready and not node.error and time.monotonic()<end:executor.spin_once(timeout_sec=.05)
                     self.assertFalse(node.error);self.assertTrue(node.ready)

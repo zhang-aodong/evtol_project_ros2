@@ -255,3 +255,50 @@ warnings:
   prediction_step_s: 0.5
   max_measurement_age_s: 0.3
   target_success_rate: 0.9
+localization:
+  enabled: true
+  mode: gnss_imu
+  state_source: truth
+  evaluate: true
+  reorder_s: 0.24
+  max_queue: 3000
+  max_imu_gap_s: 0.12
+  stale_s: 0.3
+  gravity_mps2: 9.80665
+  accel_noise: 0.08
+  gyro_noise: 0.004
+  accel_bias_noise: 0.005
+  gyro_bias_noise: 0.0005
+  initial_velocity_std_mps: 2.0
+  initial_attitude_std_deg: 2.0
+  initial_accel_bias_std: 0.1
+  initial_gyro_bias_std: 0.01
+  stationary_window_s: 0.5
+  stationary_accel_std: 0.08
+  stationary_gyro_max: 0.03
+  gnss_sigma_floor_m: 0.3
+  gnss_nis_gate: 16.27
+  fiveg_sigma_floor_m: 0.15
+  fiveg_min_rsrp_dbm: -100.0
+  fiveg_nis_gate: 16.0
+  fiveg_cauchy_scale: 3.0
+  gnss_lever_flu_m:
+  - 0.0
+  - 0.0
+  - 0.0
+  fiveg_lever_flu_m:
+  - 0.0
+  - 0.0
+  - 0.0
+  gnss_fault:
+    enabled: false
+    time_base: flight
+    default_mode: normal
+    segments:
+    - start_s: 40.0
+      end_s: 60.0
+      mode: dropout
+      bias_enu_m:
+      - 0.0
+      - 0.0
+      - 0.0

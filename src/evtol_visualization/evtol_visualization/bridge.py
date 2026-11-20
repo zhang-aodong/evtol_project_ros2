@@ -33,6 +33,7 @@ class Bridge(Node):
                 'preview/rgb/image/compressed', 'preview/semantic/image/compressed',
                 'preview/lidar/points', 'imu/data', 'gnss/fix', 'gnss/raw_observations',
                 'five_ga/observations', 'ground_truth/odometry', 'ground_truth/local_odometry',
+                'localization/odometry','localization/status','localization/metrics','localization/error_enu','localization/error_3d','localization/path','localization/truth_path',
                 'state/odometry','state/status','perception/semantic_preview/compressed',
                 'perception/surround/rgb/compressed','perception/surround/semantic_preview/compressed',
                 'perception/surround/detections','perception/surround/detections_preview/compressed',
@@ -45,12 +46,13 @@ class Bridge(Node):
         self.allowed.update(root+'/perception/roi_lidar/surround_'+view+'/points'
             for view in ('front','right','back','left','up','down'))
         self.allowed.update(root+'/perception/roi_lidar/'+view+'/points' for view in ('front_left','front_center','front_right'))
-        self.path_topics={root+'/navigation/waypoint_path',root+'/navigation/traveled_path',root+'/navigation/reference_path'}
+        self.path_topics={root+'/navigation/waypoint_path',root+'/navigation/traveled_path',root+'/navigation/reference_path',root+'/localization/path',root+'/localization/truth_path'}
         self.path_data={}
-        self.allowed.update({'/simulation/reference_origin','/simulation/truth/targets','/simulation/truth/status',
+        self.allowed.update({'/simulation/reference_origin','/simulation/geodetic_reference','/simulation/truth/targets','/simulation/truth/status',
             '/evaluation/detection_metrics','/evaluation/target_matches','/evaluation/encounter_events','/evaluation/warning_metrics','/evaluation/markers'})
         self.channels, self.subs, self.static_transforms = {}, {}, {}
         self.origin_data = None
+        self.geodetic_data = None
         self.sim_ns = 0
         self.listener = Listener()
         self.server = foxglove.start_server(name='EVTOL ROS 2', host=host, port=port,
@@ -71,7 +73,7 @@ class Bridge(Node):
                 channel = foxglove.Channel(topic, message_encoding='cdr', schema=foxglove.Schema(
                     name=types[0], encoding='ros2msg', data=expand_schema(types[0])))
                 qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
-                if topic in self.path_topics or topic in ('/tf_static','/simulation/reference_origin') or topic.endswith(('/mission/status','/control/flight_status')):
+                if topic in self.path_topics or topic in ('/tf_static','/simulation/reference_origin','/simulation/geodetic_reference') or topic.endswith(('/mission/status','/control/flight_status')):
                     qos = QoSProfile(depth=100, reliability=ReliabilityPolicy.RELIABLE,
                                      durability=DurabilityPolicy.TRANSIENT_LOCAL)
                 self.channels[topic] = channel
@@ -90,6 +92,7 @@ class Bridge(Node):
             if self.sim_ns and ns < self.sim_ns:
                 self.server.clear_session()
                 self.origin_data = None
+                self.geodetic_data = None
                 self.path_data.clear()
                 self.get_logger().warning('Simulation clock reset: cleared Foxglove session')
             self.sim_ns = ns
@@ -101,6 +104,7 @@ class Bridge(Node):
             return
         if topic == '/simulation/reference_origin':
             self.origin_data = data
+        if topic == '/simulation/geodetic_reference':self.geodetic_data = data
         if topic in self.path_topics:
             self.path_data[topic]=data
         channel = self.channels[topic]
@@ -120,6 +124,8 @@ class Bridge(Node):
                 self.publish_static()
             elif topic == '/simulation/reference_origin' and self.origin_data:
                 self.channels[topic].log(self.origin_data, log_time=self.sim_ns or time.time_ns())
+            elif topic == '/simulation/geodetic_reference' and self.geodetic_data:
+                self.channels[topic].log(self.geodetic_data, log_time=self.sim_ns or time.time_ns())
             elif topic in self.path_data:
                 self.channels[topic].log(self.path_data[topic], log_time=self.sim_ns or time.time_ns())
 

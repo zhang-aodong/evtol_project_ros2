@@ -1,0 +1,7 @@
+[
+  "docs\\自机定位第一版.md",
+  "tests\\test_ego_localization_ros.py",
+  "foxglove\\evtol-console\\tests\\ui.mjs",
+  "src\\evtol_console\\evtol_console\\web\\app.js",
+  "src\\evtol_localization\\evtol_localization\\evaluation_node.py"
+]

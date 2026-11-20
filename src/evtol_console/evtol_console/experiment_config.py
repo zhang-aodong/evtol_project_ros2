@@ -7,7 +7,7 @@ from evtol_safety.dynamic import DEFAULTS as DYNAMIC
 
 def upgrade(value):
     d=copy.deepcopy(value)
-    if d.get('version') not in (1,2,3,4,5,6):raise ValueError('Unsupported console configuration version')
+    if d.get('version') not in (1,2,3,4,5,6,7):raise ValueError('Unsupported console configuration version')
     if d['version']==1:
         d.update(version=2,sensors=dict(horizontal_fov_deg=70.,imgsz=960),
                  experiment=copy.deepcopy(EXPERIMENT),dynamic=copy.deepcopy(DYNAMIC),
@@ -29,13 +29,17 @@ def upgrade(value):
         d['version']=6
         d['sensors'].update(width=1152,height=1536)
         d['sensors']['max_hz']=15.
+    if d['version']==6:
+        from evtol_localization.options import options
+        d['version']=7
+        d['localization']=options(d.get('localization'))
     from evtol_safety.warnings import DEFAULTS as WARNINGS
     d.setdefault('warnings',copy.deepcopy(WARNINGS))
     return d
 
 
 def validate_options(d):
-    required={'version','ue','actors','mission','run','sensors','experiment','dynamic','ui','warnings'}
+    required={'version','ue','actors','mission','run','sensors','experiment','dynamic','ui','warnings','localization'}
     if set(d)!=required:raise ValueError('Missing or unknown configuration sections: '+str(set(d)^required))
     shapes=dict(ue={'editor','project','settings','visible','width','height'},actors={'count','agents','pedestrians_enabled','initialization'},
         mission={'mode','speed_mps','waypoints_enu_m','land_at_last','profile','max_speed_mps','max_acceleration_mps2'},
@@ -43,6 +47,8 @@ def validate_options(d):
         experiment=set(EXPERIMENT),dynamic=set(DYNAMIC),ui={'log_filter','log_errors','log_follow','profile_default_distance_m'})
     from evtol_safety.warnings import DEFAULTS as WARNINGS
     shapes['warnings']=set(WARNINGS)
+    from evtol_localization.options import options
+    d['localization']=options(d['localization'])
     for section,fields in shapes.items():
         if not isinstance(d[section],dict) or set(d[section])!=fields:raise ValueError('Unknown or missing fields in '+section)
     if d['actors']['initialization'] not in ('first_waypoint','ground'):

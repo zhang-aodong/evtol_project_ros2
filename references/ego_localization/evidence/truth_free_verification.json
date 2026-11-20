@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "sensor_only_time_origin_ns": "1789030146872719872",
+  "selected_byte_identical_comparisons": {
+    "gnss_only": {
+      "trajectory_sha256": "ddc175f771b2a1dc06c32696f61cf420569bc82b80974f7df85d33a28d8f1b19",
+      "termination": "completed",
+      "truth_samples": 0
+    },
+    "gnss_imu": {
+      "trajectory_sha256": "b5a29eccb6686af3092205b2a037d4cfc42709553b94e12d3406a4189e3203c4",
+      "termination": "CONVERGENCE",
+      "truth_samples": 0
+    },
+    "normal_D1": {
+      "trajectory_sha256": "6f84218aa2ae74c37a099a541f6db08823fffda3f1a5ba62d44c49b63fea759e",
+      "termination": "CONVERGENCE",
+      "truth_samples": 0
+    },
+    "outage_D1": {
+      "trajectory_sha256": "5ecaf5ff9f1db384643baedef64ec849323ced9f1d4223714222f1751f2e6ac5",
+      "termination": "CONVERGENCE",
+      "truth_samples": 0
+    }
+  },
+  "binary_sha256": "9f96ec050052036d5b4cc92f9f67dd89c2a3590b4a3aeec1431aab3e9fee890e",
+  "scope": "GNSS-only, GNSS+IMU, and D1 normal/outage. D0 and D2 were not rerun without a truth file."
+}

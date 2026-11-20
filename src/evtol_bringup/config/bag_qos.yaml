@@ -16,3 +16,13 @@
 /drone1/navigation/waypoint_path: {reliability: reliable, durability: transient_local, history: keep_last, depth: 1}
 /drone1/navigation/traveled_path: {reliability: reliable, durability: transient_local, history: keep_last, depth: 1}
 /drone1/navigation/reference_path: {reliability: reliable, durability: transient_local, history: keep_last, depth: 1}
+
+/simulation/geodetic_reference: {reliability: reliable, durability: transient_local, history: keep_last, depth: 1}
+/drone1/ground_truth/local_odometry: {reliability: best_effort, durability: volatile, history: keep_last, depth: 100}
+/drone1/localization/odometry: {reliability: best_effort, durability: volatile, history: keep_last, depth: 100}
+/drone1/localization/error_enu: {reliability: best_effort, durability: volatile, history: keep_last, depth: 100}
+/drone1/localization/error_3d: {reliability: best_effort, durability: volatile, history: keep_last, depth: 100}
+/drone1/localization/status: {reliability: reliable, durability: volatile, history: keep_last, depth: 20}
+/drone1/localization/metrics: {reliability: reliable, durability: volatile, history: keep_last, depth: 20}
+/drone1/localization/path: {reliability: reliable, durability: transient_local, history: keep_last, depth: 1}
+/drone1/localization/truth_path: {reliability: reliable, durability: transient_local, history: keep_last, depth: 1}

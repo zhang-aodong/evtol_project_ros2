@@ -6,7 +6,7 @@ const dom=new JSDOM('<div id="panel"></div>',{url:'http://127.0.0.1:9040'});
 globalThis.document=dom.window.document;
 const downloads=[];dom.window.HTMLAnchorElement.prototype.click=function(){downloads.push(this.download);};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const config={version:5,sensors:{horizontal_fov_deg:70,imgsz:1536,width:1536,height:1536,max_hz:20},warnings:{lidar_radius_m:5,lidar_enable_agl_m:5,fusion_radius_m:10},experiment:{region:'front_hemisphere',radius_m:10,evidence_s:.3},dynamic:{enabled:true,horizon_s:3},ui:{log_filter:'',log_errors:false,log_follow:true,profile_default_distance_m:100},ue:{editor:'editor.exe',project:'scene.uproject',settings:'airsim.json',visible:true,width:1280,height:720},
+const config={version:7,localization:{"enabled": true, "mode": "gnss_imu", "state_source": "truth", "evaluate": true, "reorder_s": 0.24, "max_queue": 3000, "max_imu_gap_s": 0.12, "stale_s": 0.3, "gravity_mps2": 9.80665, "accel_noise": 0.08, "gyro_noise": 0.004, "accel_bias_noise": 0.005, "gyro_bias_noise": 0.0005, "initial_velocity_std_mps": 2.0, "initial_attitude_std_deg": 2.0, "initial_accel_bias_std": 0.1, "initial_gyro_bias_std": 0.01, "stationary_window_s": 0.5, "stationary_accel_std": 0.08, "stationary_gyro_max": 0.03, "gnss_sigma_floor_m": 0.3, "gnss_nis_gate": 16.27, "fiveg_sigma_floor_m": 0.15, "fiveg_min_rsrp_dbm": -100.0, "fiveg_nis_gate": 16.0, "fiveg_cauchy_scale": 3.0, "gnss_lever_flu_m": [0.0, 0.0, 0.0], "fiveg_lever_flu_m": [0.0, 0.0, 0.0], "gnss_fault": {"enabled": false, "time_base": "flight", "default_mode": "normal", "segments": [{"start_s": 40.0, "end_s": 60.0, "mode": "dropout", "bias_enu_m": [0.0, 0.0, 0.0]}]}},sensors:{horizontal_fov_deg:70,imgsz:1536,width:1536,height:1536,max_hz:20},warnings:{lidar_radius_m:5,lidar_enable_agl_m:5,fusion_radius_m:10},experiment:{region:'front_hemisphere',radius_m:10,evidence_s:.3},dynamic:{enabled:true,horizon_s:3},ui:{log_filter:'',log_errors:false,log_follow:true,profile_default_distance_m:100},ue:{editor:'editor.exe',project:'scene.uproject',settings:'airsim.json',visible:true,width:1280,height:720},
   actors:{count:0,agents:[],pedestrians_enabled:false},
   mission:{mode:'profile',speed_mps:2,max_speed_mps:4,max_acceleration_mps2:1,land_at_last:true,
     waypoints_enu_m:[[0,0,3]],profile:{heading_deg:0,points:[{speed_mps:0,height_m:0,distance_m:100},{speed_mps:2,height_m:10,distance_m:100},{speed_mps:2,height_m:10,distance_m:30},{speed_mps:0,height_m:0,distance_m:100}]}},
@@ -21,7 +21,7 @@ const dispose=mountConsole(document.querySelector('#panel'),async request=>{
   if(request.action==='status')return {ok:true,data:state};
   if(request.action==='collection_topics')return {ok:true,data:[{name:'/clock',types:['rosgraph_msgs/msg/Clock'],publishers:1},{name:'/drone1/imu/data',types:['sensor_msgs/msg/Imu'],publishers:1}]};
   if(['validate_collection','save_collection'].includes(request.action))return {ok:true,data:request.payload};
-  if(request.action==='import_config')return request.payload.version===5?{ok:true,data:structuredClone(request.payload)}:{ok:false,error:'Unsupported config'};
+  if(request.action==='import_config')return request.payload.version===7?{ok:true,data:structuredClone(request.payload)}:{ok:false,error:'Unsupported config'};
   if(request.action==='export_config')return {ok:true,data:request.payload.config||state.config};
   if(request.action==='export_run')return {ok:true,data:state.config};
   return {ok:true,data:{operation_id:'fixture'}};
@@ -30,7 +30,44 @@ const $=s=>document.querySelector(s);
 const input=(element,value)=>{element.value=String(value);element.dispatchEvent(new dom.window.Event('input',{bubbles:true}));};
 try {
   await wait(25);
-  assert.equal(document.querySelectorAll('[data-tab]').length,7);
+  assert.equal(document.querySelectorAll('[data-tab]').length,8);
+  $('[data-tab="localization"]').click();
+  const select=$('[data-bind="localization.mode"]');input(select,'gnss_imu_5g');
+  const segments=[{start_s:40,end_s:60,mode:'dropout',bias_enu_m:[0,0,0]},{start_s:90,end_s:95,mode:'no_fix',bias_enu_m:[0,0,0]}];
+  $('#gnss-fault-segments').value=JSON.stringify(segments);$('#gnss-fault-segments').dispatchEvent(new dom.window.Event('change'));
+  $('[data-save]').click();await wait(25);
+  assert.equal(requests.findLast(r=>r.action==='save').payload.localization.mode,'gnss_imu_5g');
+  assert.deepEqual(requests.findLast(r=>r.action==='save').payload.localization.gnss_fault.segments,segments);
+  state.ros_running=true;state.telemetry.localization_metrics_received_wall=Date.now()/1000;
+  const origin=1_800_000_000_000_000_000;
+  const row=(seconds,xyz=[-.1,.2,-.3])=>({stamp_ns:origin+seconds*1e9,error_enu_m:xyz,error_3d_m:Math.hypot(...xyz),phase:'normal'});
+  state.telemetry.localization_metrics={valid:true,session_id:'ego-ui',origin_stamp_ns:origin,current:row(1),recent_errors:[row(.8),row(.9),row(1)],summary:{rmse_3d_m:.456,p95_3d_m:.789,coverage:.99},estimator:{status:'normal',mode:'gnss_imu_5g',publish_hz:40,state_age_s:.24}};
+  await wait(600);assert.match($('#localization-metrics').textContent,/0.374/);assert.match($('#localization-metrics').textContent,/-0.100/);assert.match($('#localization-metrics').textContent,/99.0%/);
+  assert.equal(document.querySelectorAll('[data-error-chart]').length,4);
+  for(const key of ['x','y','z','3d'])assert.equal($(`[data-error-chart="${key}"]`).querySelectorAll('polyline').length,1);
+  const xplot=$('[data-error-chart="x"]'),zplot=$('[data-error-chart="z"]');
+  assert.ok(xplot.querySelector('polyline').getAttribute('points').split(' ').every(p=>+p.split(',')[1]>112),'Negative X errors remain below zero');
+  assert.ok(zplot.querySelector('polyline').getAttribute('points').split(' ').every(p=>+p.split(',')[1]>112),'Negative Z errors remain below zero');
+  const initial=xplot.querySelector('polyline').getAttribute('points');await wait(300);
+  assert.equal(xplot.querySelector('polyline').getAttribute('points'),initial,'Polling must not duplicate samples');
+  $('#localization-pause').click();state.telemetry.localization_metrics.current=row(1.2,[.4,-.3,.2]);await wait(300);
+  assert.equal(xplot.querySelector('polyline').getAttribute('points'),initial,'Paused chart must stay frozen');
+  $('#localization-pause').click();await wait(300);assert.notEqual(xplot.querySelector('polyline').getAttribute('points'),initial);
+  state.telemetry.localization_metrics.current=row(3,[.4,.3,.2]);await wait(300);
+  assert.equal(xplot.querySelectorAll('polyline').length,1);assert.equal(xplot.querySelectorAll('circle').length,1,'A gap must not connect across missing data');
+  xplot.getBoundingClientRect=()=>({left:0,width:680});xplot.dispatchEvent(new dom.window.MouseEvent('pointermove',{clientX:660}));
+  assert.match($('[data-localization-hover="x"]').textContent,/t=3.000 s/);
+  $('#localization-export').click();await wait(25);assert.ok(downloads.includes('evtol-localization-errors.csv'));
+  state.telemetry.localization_metrics_received_wall=0;await wait(1100);assert.match($('#localization-metrics').textContent,/过期/);
+  assert.match($('#localization-curve-status').textContent,/保留历史/);
+  $('#localization-clear').click();assert.equal(xplot.querySelectorAll('polyline,circle').length,0);
+  state.telemetry.localization_metrics_received_wall=Date.now()/1000;await wait(300);assert.equal(xplot.querySelectorAll('polyline,circle').length,0,'Clear must not refill from the last report');
+  state.telemetry.localization_metrics.current=row(3.2);await wait(300);assert.equal(xplot.querySelectorAll('circle').length,1);
+  state.telemetry.localization_metrics.session_id='new-session';state.telemetry.localization_metrics.current=row(.5);state.telemetry.localization_metrics.recent_errors=[];await wait(300);
+  assert.equal(xplot.querySelectorAll('circle').length,1);assert.match($('#localization-curve-status').textContent,/已缓存 1 点/);
+  state.telemetry.localization_metrics.current=row(.2);await wait(300);assert.match($('#localization-curve-status').textContent,/已缓存 1 点/,'Clock rollback must clear previous samples');
+  state.telemetry.localization_metrics.current={stamp_ns:origin+.3e9,error_enu_m:[null,0,0],error_3d_m:0};await wait(300);assert.match($('#localization-curve-status').textContent,/已缓存 1 点/,'Invalid axes must never be plotted as zero');
+  state.ros_running=false;
   $('[data-tab="mission"]').click();
   assert.equal($('#profile-chart').querySelectorAll('circle').length,4);
   input($('[data-profile-index="2"][data-profile-key="distance_m"]'),50);

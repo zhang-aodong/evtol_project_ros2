@@ -104,7 +104,7 @@ class ConsoleBridge(Bridge):
         self.create_subscription(String,root+'/control/flight_status',lambda m:self.text('flight',m),10)
         self.create_subscription(String,'/scenario/status',lambda m:self.text('actors',m),LATCHED)
         self.create_subscription(DiagnosticArray,'/diagnostics',self.diagnostics,10)
-        for topic,key in [('/evaluation/detection_metrics','detection_metrics'),('/evaluation/warning_metrics','warning_metrics'),('/simulation/truth/status','truth_status')]:
+        for topic,key in [('/evaluation/detection_metrics','detection_metrics'),('/evaluation/warning_metrics','warning_metrics'),('/simulation/truth/status','truth_status'),(root+'/localization/status','localization_status'),(root+'/localization/metrics','localization_metrics')]:
             self.create_subscription(String,topic,lambda m,k=key:self.metric(k,m),10)
         self.status_channel=foxglove.Channel('/simulation/console/status',message_encoding='json',schema=foxglove.Schema(
             name='evtol/ConsoleStatus',encoding='jsonschema',data=json.dumps({'type':'object'}).encode()))
@@ -114,7 +114,7 @@ class ConsoleBridge(Bridge):
         if msg.session_id!=self.session:
             self.session=msg.session_id;self.samples.clear()
             with self.engine.lock:
-                for key in ('detection_metrics','warning_metrics','truth_status','detection_metrics_received_wall','warning_metrics_received_wall','truth_status_received_wall','mission','flight','actors','mission_received_wall','flight_received_wall','actors_received_wall','profile_actual','position_enu_m','speed_mps','stamp_s','received_wall'):
+                for key in ('localization_status','localization_metrics','localization_status_received_wall','localization_metrics_received_wall','detection_metrics','warning_metrics','truth_status','detection_metrics_received_wall','warning_metrics_received_wall','truth_status_received_wall','mission','flight','actors','mission_received_wall','flight_received_wall','actors_received_wall','profile_actual','position_enu_m','speed_mps','stamp_s','received_wall'):
                     self.engine.telemetry.pop(key,None)
     def trigger(self,action):
         def callback(request,response):

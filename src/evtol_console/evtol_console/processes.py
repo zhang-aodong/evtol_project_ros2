@@ -61,6 +61,10 @@ def node_specs(c,config,simconfig,run):
     if c.get('navigation_lidar',{}).get('enabled',False) and c.get('lidar_obstacles',{}).get('enabled',True):
         algorithms.insert(next(i for i,s in enumerate(algorithms) if s[0]=='safety'),('lidar_obstacles','evtol_targeting.lidar_obstacles',[]))
     if c.get('ue_detection_boxes',{}).get('enabled',True):algorithms.append(('ue_boxes','evtol_targeting.ue_detection_boxes',[]))
+    localization=c.get('localization',{})
+    if localization.get('enabled',False) or c['state']['source']=='fused':
+        algorithms.insert(0,('ego_localization','evtol_localization.node',[]))
+        if localization.get('evaluate',True):algorithms.append(('ego_localization_evaluation','evtol_localization.evaluation_node',[]))
     if run['actors']:algorithms.insert(next(i for i,s in enumerate(algorithms) if s[0]=='gateway'),('actors','evtol_scenario.actors',[]))
     if run['evaluate']:algorithms.extend([('target_truth','evtol_targeting.evaluation',['--truth']),('evaluation','evtol_targeting.evaluation',[]),('range_evaluation','evtol_targeting.experiment_node',[])])
     for name,module,extra in algorithms:specs.append((name,module,['--config',str(config)]+extra+['--ros-args','-p','use_sim_time:=true']))

@@ -8,7 +8,11 @@ CLASSES={0:'background',1:'aircraft',2:'high_rise',3:'pedestrian',4:'ground',5:'
 def defaults(namespace='drone1'):
     root='/'+namespace.strip('/')
     return dict(output_dir='data/collections',bag=dict(storage_id='mcap',use_sim_time=True,
-        topics=['/clock','/tf','/tf_static','/simulation/reference_origin',root+'/camera/rgb/image_raw',
+        topics=['/simulation/geodetic_reference',root+'/imu/data',root+'/gnss/fix',root+'/five_ga/observations',
+                root+'/ground_truth/odometry',root+'/ground_truth/local_odometry',root+'/localization/odometry',
+                root+'/localization/status',root+'/localization/metrics',root+'/localization/path',root+'/localization/truth_path',
+                root+'/control/flight_status',root+'/localization/error_enu',root+'/localization/error_3d',
+                '/clock','/tf','/tf_static','/simulation/reference_origin',root+'/camera/rgb/image_raw',
                 root+'/camera/semantic/class_ids',root+'/camera/rgb/camera_info',root+'/state/odometry',root+'/lidar/points'],
         queue_mb=256,split_size_mb=2048),dataset=dict(namespace=namespace.strip('/'),rate_hz=5.,
         class_ids=[6],labels=['detection','segmentation'],split='train',min_area_px=20,

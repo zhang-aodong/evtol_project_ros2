@@ -40,7 +40,11 @@ def defaults(root):
                 dict(speed_mps=2.,height_m=10.,distance_m=30.),dict(speed_mps=0.,height_m=0.,distance_m=100.)]),
             max_speed_mps=base['control']['max_speed_mps'],max_acceleration_mps2=base['safety']['local_velocity']['max_acceleration_mps2']),
         run=dict(execute=False,actors=True,evaluate=True,new_session=True))
-    return upgrade(value)
+    value=upgrade(value)
+    from evtol_localization.options import options
+    value['localization']=options(base.get('localization'))
+    value['localization']['state_source']=base['state']['source']
+    return value
 
 
 def points(value,name,maximum=1000):
@@ -120,6 +124,14 @@ def artifacts(draft,root):
         profile_speed_cap_mps=d['mission']['max_speed_mps'],profile_acceleration_cap_mps2=d['mission']['max_acceleration_mps2'])
     base['control']['max_speed_mps']=d['mission']['max_speed_mps']
     local=base['safety']['local_velocity'];local['max_speed_mps']=d['mission']['max_speed_mps'];local['max_acceleration_mps2']=d['mission']['max_acceleration_mps2']
+    base['localization']=copy.deepcopy(d['localization'])
+    base['state']['source']=d['localization']['state_source']
+    if base['state']['source']=='fused':
+        # Delayed estimates can only transform scans at the same historical
+        # epoch. Include the ordering delay in the scan budget AND braking cap.
+        base['safety']['cloud_timeout_s']=max(base['safety']['cloud_timeout_s'],base['localization']['reorder_s']+.11)
+        base['fusion']['wait_timeout_s']=max(base['fusion']['wait_timeout_s'],base['localization']['reorder_s']+.11)
+        base['safety']['localization_delay_notice']='Historical fused poses: scan age and braking envelope include the localization ordering delay.'
     # Preserve the existing sensing/braking envelope. Reject unachievable
     # speed requests rather than quietly increasing the collision horizon.
     from evtol_safety.velocity import LocalVelocityAvoidance

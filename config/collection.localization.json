@@ -1,0 +1,44 @@
+{
+  "output_dir": "data/collections",
+  "bag": {
+    "storage_id": "mcap",
+    "use_sim_time": true,
+    "topics": [
+      "/clock",
+      "/simulation/reference_origin",
+      "/simulation/geodetic_reference",
+      "/drone1/imu/data",
+      "/drone1/gnss/fix",
+      "/drone1/five_ga/observations",
+      "/drone1/ground_truth/odometry",
+      "/drone1/ground_truth/local_odometry",
+      "/drone1/control/flight_status",
+      "/drone1/state/odometry",
+      "/drone1/state/status",
+      "/drone1/localization/odometry",
+      "/drone1/localization/status",
+      "/drone1/localization/metrics",
+      "/drone1/localization/error_enu",
+      "/drone1/localization/error_3d"
+    ],
+    "queue_mb": 256,
+    "split_size_mb": 2048
+  },
+  "dataset": {
+    "namespace": "drone1",
+    "rate_hz": 5.0,
+    "class_ids": [
+      6
+    ],
+    "labels": [
+      "detection",
+      "segmentation"
+    ],
+    "split": "train",
+    "min_area_px": 20,
+    "polygon_epsilon_px": 1.0,
+    "jpeg_quality": 95,
+    "queue_frames": 8,
+    "pair_capacity": 12
+  }
+}

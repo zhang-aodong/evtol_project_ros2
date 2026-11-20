@@ -1,0 +1,5 @@
+[
+  "tests\\probe_localization_replay.py",
+  "tests\\test_detection_launch.py",
+  "src\\evtol_bringup\\launch\\target_localization.launch.py"
+]

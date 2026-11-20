@@ -61,6 +61,12 @@ class SensorNode(Node):
         self.stop_worker = threading.Event()
         self.worker = None
         self.pubs = {}
+        self.geodetic_pub = None
+        if kind == 'gnss':
+            from rclpy.qos import DurabilityPolicy
+            self.geodetic_pub = self.create_publisher(NavSatFix, '/simulation/geodetic_reference',
+                QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+        self.geodetic_sent = False
         self.steady = RclClock(clock_type=ClockType.STEADY_TIME)
         self.diag = self.create_publisher(DiagnosticArray, '/diagnostics', 10)
         self.create_timer(1., self.diagnostics, clock=self.steady)
@@ -244,6 +250,13 @@ class SensorNode(Node):
         self.publish('imu/data', msg)
 
     def emit_gnss(self, ns, data):
+        if not self.geodetic_sent:
+            home = self.backend.home()
+            datum = NavSatFix(header=header(ns, self.frames['world']), latitude=float(home['latitude']),
+                longitude=float(home['longitude']), altitude=float(home['altitude']))
+            datum.status.status = NavSatStatus.STATUS_FIX
+            self.geodetic_pub.publish(datum)
+            self.geodetic_sent = True
         gps = data['gnss']
         geo = gps['geo_point']
         msg = NavSatFix(header=header(ns, self.frames['gnss']),

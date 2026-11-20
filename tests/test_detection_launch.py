@@ -13,6 +13,14 @@ spec.loader.exec_module(launch_module)
 
 
 class DetectionLaunchTests(unittest.TestCase):
+    def test_localization_launch_builds_real_processes(self):
+        from launch import LaunchContext
+        from launch.actions import ExecuteProcess
+        spec=importlib.util.spec_from_file_location('ego_launch_integration',ROOT/'src/evtol_bringup/launch/target_localization.launch.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        context=LaunchContext();context.launch_configurations.update(config=str(ROOT/'config/targeting.yaml'),execute='false',actors='false',evaluate='false')
+        actions=module.processes(context)
+        self.assertGreaterEqual(sum(isinstance(a,ExecuteProcess) for a in actions),10)
     def generated(self, enabled):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

@@ -1,0 +1,14 @@
+[
+  "README.md",
+  "config\\collection.localization.json",
+  "docs\\ego_localization_acceptance.md",
+  "docs\\ego_localization_changes.json",
+  "docs\\自机定位第一版.md",
+  "scripts\\record.ps1",
+  "scripts\\test_localization.ps1",
+  "docs\\images\\localization_same_bag.png",
+  "src\\evtol_localization\\README.md",
+  "src\\evtol_collection\\evtol_collection\\options.py",
+  "src\\evtol_localization\\evtol_localization\\evaluation.py",
+  "src\\evtol_localization\\evtol_localization\\evaluation_node.py"
+]

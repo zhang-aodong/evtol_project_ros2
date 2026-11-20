@@ -11,6 +11,9 @@ $qosFile = Join-Path $projectRoot 'src\evtol_bringup\config\bag_qos.yaml'
   /drone1/camera/semantic/image /drone1/camera/semantic/camera_info /drone1/camera/semantic/class_ids `
   /drone1/lidar/points /drone1/imu/data /drone1/gnss/fix /drone1/gnss/raw_observations `
   /drone1/ground_truth/odometry /drone1/five_ga/observations `
-  /simulation/reference_origin /drone1/state/odometry `
+  /simulation/reference_origin /simulation/geodetic_reference /drone1/state/odometry /drone1/ground_truth/local_odometry `
+  /drone1/localization/odometry /drone1/localization/status /drone1/localization/metrics `
+  /drone1/localization/error_enu /drone1/localization/error_3d `
+  /drone1/localization/path /drone1/localization/truth_path /drone1/control/flight_status `
   /drone1/navigation/waypoint_path /drone1/navigation/traveled_path
 if ($LASTEXITCODE -ne 0) { throw 'rosbag2 recording failed.' }

@@ -1,0 +1,321 @@
+{
+  "scope": "GNSS+IMU+5G-A first implementation; VIO deferred",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "a08f745c5177fa76286e5083ee068b9d71624903e8f21d06db24a24b43dec49a"
+    },
+    {
+      "path": "config/collection.localization.json",
+      "sha256": "7ce0a25f835b2d9df0030246891fa3cce3cd794dc03b90d3857ba74f6cb0a82d"
+    },
+    {
+      "path": "config/targeting.fused_5g.yaml",
+      "sha256": "96f7ba63508cce6fe7f43709f87e5df1f081da28e903038025b83282ba95ca37"
+    },
+    {
+      "path": "config/targeting.gnss_imu.yaml",
+      "sha256": "cfd5b92c0cb739317a2f385e2f4cf98074f03c6eab3d70f9a71141b65b62c035"
+    },
+    {
+      "path": "config/targeting.gnss_imu_5g.yaml",
+      "sha256": "bd02e6201d6057bf502c0c2755e49c649e75c9eeb57bd9757841b6407a03bb1f"
+    },
+    {
+      "path": "config/targeting.gnss_outage.yaml",
+      "sha256": "92db2945da1a5a0eb7a0fd416d7a042e94bb111d81ba0524c728570a1d631245"
+    },
+    {
+      "path": "config/targeting.yaml",
+      "sha256": "cfd5b92c0cb739317a2f385e2f4cf98074f03c6eab3d70f9a71141b65b62c035"
+    },
+    {
+      "path": "docs/ego_localization_acceptance.md",
+      "sha256": "922e7ebd79563dfeeda0024f8eb384bdc4a59f0ae1ec6760722458153e8fb201"
+    },
+    {
+      "path": "docs/images/localization_same_bag.png",
+      "sha256": "79353d1193b3e00b5f8ddbfbb573354d2578de7353f781f0e2a0c2bae02ddb89"
+    },
+    {
+      "path": "docs/自机定位第一版.md",
+      "sha256": "22c06f616f37dec64bb1fa44b35d19950d55c9e12984cc0b8e15646a97fe36fe"
+    },
+    {
+      "path": "foxglove/evtol-console/tests/ui.mjs",
+      "sha256": "fa3576152cafd1dc3a86e8443a39b4641e5f5df9d7ac9241727b85d0977d6bee"
+    },
+    {
+      "path": "references/ego_localization/PROVENANCE.json",
+      "sha256": "c0325d18a1e3070c46fa3afe15957ec09682ea1da36c07fd5f536ea8e41f0444"
+    },
+    {
+      "path": "references/ego_localization/evidence/offline_phase_evaluation.json",
+      "sha256": "41262a35c61cb07577d103c670283a62831a94236b1847041f78a72e6b993cd8"
+    },
+    {
+      "path": "references/ego_localization/evidence/truth_free_loader.md",
+      "sha256": "f8aa741535857116235bb8a5b3b6d660283e40d8bea8dfc7d3e7b9e469e9eba3"
+    },
+    {
+      "path": "references/ego_localization/evidence/truth_free_verification.json",
+      "sha256": "b1bd49e215fa4b9a7e44cf46dee2e2e75f1f78045c905c69fd033115feb43e9d"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/CMakeLists.txt",
+      "sha256": "2951a38d4405285d3d9b9a1810d9f415df11386fc4b12defd094f87bef7a1c8b"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/README.md",
+      "sha256": "6884886e9b2026db2725a8b812a18934532a5103407cedffde4c20e4ce985aaa"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/app/offline_fusion_main.cpp",
+      "sha256": "ce50715eca0f995dcf0f4b71100cb87830e963dee5cb9e9ed66733c84ac0bbd1"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/include/offline_fusion/dataset.hpp",
+      "sha256": "e9a6221f5f27aeb12ff46e5f539d96257a4cb20c478e2aef07931815f1e75058"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/include/offline_fusion/fusion.hpp",
+      "sha256": "1ad96bdfde590bb060d0131cc4b3f7cf3f3877420550f59abcc39ae5182cd6d7"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/include/offline_fusion/imu_covariance.hpp",
+      "sha256": "94e3e6c14d96845a3cc0c31d319717f9d7c96dcf4b7f24647edb39c705a3ade6"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/include/offline_fusion/initialization.hpp",
+      "sha256": "b8afb51a52dcbb26a4b1e59eb9f19838843288456d88bf4f492bc76fb92cf557"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/include/offline_fusion/lidar.hpp",
+      "sha256": "704d053a4e4818bd33e562f26f23145285d05e11853b2e7d35f9e4912504f705"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/include/offline_fusion/math.hpp",
+      "sha256": "e1221808a30d1711e30a43e150613ee478978a10bf971860c0a52375a912a4c4"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/include/offline_fusion/types.hpp",
+      "sha256": "2aea454418818994fb4fcf0726582b62ec2813cfb7685a21ffd028d77522dadd"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/include/offline_fusion/vision.hpp",
+      "sha256": "bcc2fd7d4a99a71f5f71e033e3e0ab1e7cba5dac6210c9f4032c6b34b4a6eb0d"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/src/ceres_fusion.cpp",
+      "sha256": "33ef001c67b8c77a58a8200652ee75ba4aa2d7f8ffdb932e61e645b1e8c3c67e"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/src/dataset.cpp",
+      "sha256": "2b0841005d5cca8ba37c3ce33e5caa03a81675a324a8c66aa9d4c038f4d4519b"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/src/fusion.cpp",
+      "sha256": "86b8e4a679cc382fd183dd572f65f679803a8905ebc32bf16ac55268778ab39c"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/src/initialization.cpp",
+      "sha256": "9e30c05c96106c1b51b99e08abfe754576be5c88780dfd96794dc686cdc60f9e"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/src/lidar.cpp",
+      "sha256": "1fd1afefeb199f202c58c621ec0488c0c85dfa4b22a666457767f6e3f9320dea"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/src/vision.cpp",
+      "sha256": "c688fa8bd8f2d6e63d13877cd57986d57477b135dd3ca33b8a8108748e1798b7"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/tests/test_camera_backend.cpp",
+      "sha256": "ce99ae7d585ea5531643d0c9ae4e7e22ab044956a20ca599ccf787a34e2a82e5"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/tests/test_camera_frontend.cpp",
+      "sha256": "c97e82e8a186fb918ec3c51fa7191b7d03de793768a3623e242d80672f5668d2"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/tests/test_imu.cpp",
+      "sha256": "3dc46d1195c9aebfeeb1615172c41cd011498ffde22827acacc3e408c03cda43"
+    },
+    {
+      "path": "references/ego_localization/offline_reference/tests/test_lidar_geometry.cpp",
+      "sha256": "abf36ffa1fd7a313465b8b000bb950830ce27bd4b5d09fcc648c961f1d30f92b"
+    },
+    {
+      "path": "references/ego_localization/自机定位_ROS2移植任务书.md",
+      "sha256": "1aa6286d007d0b870df2fbbb77bade87a1740ca1746db98d6166594b3ba25426"
+    },
+    {
+      "path": "scripts/test_localization.ps1",
+      "sha256": "2ef9d1fe86c3b13373d8032b0866c94d092a1e62e78cd227aa0711f74aac80c2"
+    },
+    {
+      "path": "scripts/compare_localization_bag.py",
+      "sha256": "6030e03009bb4154b267130791a04c566b0470d4247b8bf65d9b7228f4eac33f"
+    },
+    {
+      "path": "scripts/record.ps1",
+      "sha256": "8a580eafa756d2cd8266bde2a0b23e7ae546c0c1e646c85569a5d778e4b5953e"
+    },
+    {
+      "path": "scripts/replay_localization.ps1",
+      "sha256": "3225d0260d872f5d31e0084d1801a754fc1dff8475e1b4d9ab7e773452fb6223"
+    },
+    {
+      "path": "src/evtol_localization/README.md",
+      "sha256": "78a32798938695b22e78ed0859a1251f79504f63548a701879c3ba708403f1b0"
+    },
+    {
+      "path": "src/evtol_bringup/config/bag_qos.yaml",
+      "sha256": "ca0bbe940fb1673f8361edb587753299a0d4cfb4f03a1656620267f5cc6b035d"
+    },
+    {
+      "path": "src/evtol_bringup/launch/ego_localization_replay.launch.py",
+      "sha256": "1d1562e8f2660ed21644c8dcc731ab7c48de1b688549446ce082e89edc61b7a0"
+    },
+    {
+      "path": "src/evtol_bringup/launch/target_localization.launch.py",
+      "sha256": "850757dda91e27e66176cdafe22ddb599e0211d2120b9b1fa9f3107513b70ca8"
+    },
+    {
+      "path": "src/evtol_bringup/package.xml",
+      "sha256": "49cce8e091c032dcceb8ee68430786c11b2ab0bb20832d862c0192d354272af8"
+    },
+    {
+      "path": "src/evtol_collection/evtol_collection/options.py",
+      "sha256": "04e61d6080e51c1fe44bed0d5db84936d67e52451af3639b342530bad5934f18"
+    },
+    {
+      "path": "src/evtol_collection/evtol_collection/recorder.py",
+      "sha256": "2e6a3a15497ae6580c74b8571aca1d25880c5449245bd07fd2abf05c625effcc"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/configuration.py",
+      "sha256": "0b4696a76b01b4bdf6438c6f20a0747374df1b007fd5f10df97f11750bdc39e8"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/experiment_config.py",
+      "sha256": "cc46b048cdd650df50af138770d3dd38f46871c30d1e0a6e37f2948585d1c259"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/processes.py",
+      "sha256": "9ea629f3e89a2bdb61734c092561325400105e0e83467eacc34eade11d682e28"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/server.py",
+      "sha256": "c0ccbd07421e9b96fd305269afb86963afe75181cc90358f7a3e59ae1ee5aa46"
+    },
+    {
+      "path": "src/evtol_console/evtol_console/web/app.js",
+      "sha256": "dc0393e65e41786c618030e810aae7c5e86eeb2ac266bc062a4280d1685b7159"
+    },
+    {
+      "path": "src/evtol_console/package.xml",
+      "sha256": "6d3ec46a2209b4b4c28d88b7a441f42914e81172cdfe8ca9e46943c28fff4848"
+    },
+    {
+      "path": "src/evtol_localization/evtol_localization/__init__.py",
+      "sha256": "3a3bae560a1e540ebc730f34ed2f2ed638958bc41165b18df38fa3bde35aaa48"
+    },
+    {
+      "path": "src/evtol_localization/evtol_localization/eskf.py",
+      "sha256": "fd8086822fb631252c8deecd5d228925f6c60a5bfa3bcd9ae573f1eb5d77738f"
+    },
+    {
+      "path": "src/evtol_localization/evtol_localization/evaluation.py",
+      "sha256": "d09aa527844b046884a8ef2df66f75062123a96df016ef9110d7569a536f94a2"
+    },
+    {
+      "path": "src/evtol_localization/evtol_localization/evaluation_node.py",
+      "sha256": "bcef70418212d6b0e37faf2d44773f7723efc6845b5b890f8bc5c2e86fdcbfa1"
+    },
+    {
+      "path": "src/evtol_localization/evtol_localization/geodesy.py",
+      "sha256": "25863719f9a49944b3a8c0e546b18900a9c91243e8b4a5469396b08f32ffd910"
+    },
+    {
+      "path": "src/evtol_localization/evtol_localization/node.py",
+      "sha256": "7e930b3baa21d17748a7b2ed6cd14e3f05ad2f0d177911a95a9a1a89e3934ef5"
+    },
+    {
+      "path": "src/evtol_localization/evtol_localization/options.py",
+      "sha256": "d5a7aa7df86a5c52f3d82bad83c52ee69f32e5fd9766d4b02ee988df1c17d47d"
+    },
+    {
+      "path": "src/evtol_localization/evtol_localization/stream.py",
+      "sha256": "6836d3759ebb95aae44c182bd86b4cb9966791ce24226f4a245c4b0f1e551754"
+    },
+    {
+      "path": "src/evtol_localization/package.xml",
+      "sha256": "cc1cbc20cf9126314421f6041bb445e0dad47ae5b4f4f694d9de023c4ab5257a"
+    },
+    {
+      "path": "src/evtol_localization/resource/evtol_localization",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "src/evtol_localization/setup.cfg",
+      "sha256": "ef75d8d6db567eb4ace2364d9686fd4cd729aef59d6159e9cb66df709bc3da6e"
+    },
+    {
+      "path": "src/evtol_localization/setup.py",
+      "sha256": "9210910e3804deb96829e9be31ff420e06ef0fd9a9dabab3da32c8125c088d25"
+    },
+    {
+      "path": "src/evtol_safety/evtol_safety/gateway.py",
+      "sha256": "a71f7ae949958937bcf077dee45760447270e109936a2f91a96ddbdcdae817ee"
+    },
+    {
+      "path": "src/evtol_simulation/evtol_simulation/sensor_node.py",
+      "sha256": "fa712f81e3f489c168c5bf218e2ef82b218fdef5e5812379ccbd7b174780c48d"
+    },
+    {
+      "path": "src/evtol_targeting/evtol_targeting/configuration.py",
+      "sha256": "872899d6859e18e2af22b2a9527faf29d87f7daca9b9b9045e5d97feb917a457"
+    },
+    {
+      "path": "src/evtol_targeting/evtol_targeting/state_node.py",
+      "sha256": "20b684f0e01c26cf7d6d5d9a009e8af3b574b2d67b65653e4cfa318e62f21e6f"
+    },
+    {
+      "path": "src/evtol_visualization/evtol_visualization/bridge.py",
+      "sha256": "919bb14924dc465066d4b3700a8d6d58a90218f9af96d878f8b1f2472f0b711f"
+    },
+    {
+      "path": "tests/probe_ego_localization.py",
+      "sha256": "03c6289ea96743e49767ea01d843ec575a9253dcd353592679eb0cffd19e0cd7"
+    },
+    {
+      "path": "tests/probe_localization_replay.py",
+      "sha256": "3d6134280f21c62256b5a47d5c87c61fbe3616a28cdf1cf137ec641afb23fd51"
+    },
+    {
+      "path": "tests/test_collection.py",
+      "sha256": "395ee4f2d11817e55ad3c3bca4e785d35dc414d10d8e90ef7c8acbd2944e1886"
+    },
+    {
+      "path": "tests/test_console.py",
+      "sha256": "e740b79b8cf66e40510c95bfc927ed32ab81cc3256196f47334179e9fe6d57fc"
+    },
+    {
+      "path": "tests/test_detection_launch.py",
+      "sha256": "93a21326c53265526b55d52fd471a06dbca732a688c52916554bd5890fafef7f"
+    },
+    {
+      "path": "tests/test_ego_localization.py",
+      "sha256": "773d588a4250bbdec4563126f63f1a2d32d2ef330f534f2fada847884afdca9d"
+    },
+    {
+      "path": "tests/test_ego_localization_ros.py",
+      "sha256": "f3b4ad585f10cae2d0f98860dfd911c5c439d7f760b87ce66e3f7c5c05c7dc82"
+    },
+    {
+      "path": "tests/test_fused_experiment.py",
+      "sha256": "e784a3557c03008c33dc6e323ee6a2b330352f382ca4914ced1146c2de1acee5"
+    }
+  ]
+}

@@ -39,10 +39,12 @@ class Gateway(Node):
 
     def publish_status(self):
         if self.origin:self.flight_pub.publish(String(data=json.dumps(dict(session_id=self.origin.session_id,
+            stamp_ns=self.get_clock().now().nanoseconds,takeoff_stamp_ns=getattr(self,'takeoff_stamp_ns',None),
             phase=self.phase,execute=self.execute,reason=self.failure))))
 
     def transition(self,phase):
         if phase!=self.phase:self.get_logger().info('Flight phase: '+phase)
+        if phase=='takeoff' and not getattr(self,'takeoff_stamp_ns',None):self.takeoff_stamp_ns=self.get_clock().now().nanoseconds
         self.phase=phase;self.publish_status()
 
     def stop_service(self,request,response):

@@ -86,10 +86,19 @@ class Collector(Node):
                 self.state='waiting_topics'
                 if time.monotonic()-self.started>20:raise RuntimeError('Selected topics not available: '+', '.join(missing))
                 return
+            # Topic discovery can precede endpoint discovery on Fast DDS. Do not
+            # commit a volatile subscription before the publisher QoS is known:
+            # a static reference may only ever have one historical sample.
+            endpoints={topic:self.get_publishers_info_by_topic(topic) for topic in self.o['bag']['topics']}
+            self.missing=[topic for topic,infos in endpoints.items() if not infos]
+            if self.missing:
+                self.state='waiting_publishers'
+                if time.monotonic()-self.started>20:raise RuntimeError('Selected publishers not discovered: '+', '.join(self.missing))
+                return
             for i,topic in enumerate(self.o['bag']['topics']):
                 types=available[topic]
                 if len(types)!=1:raise ValueError('Ambiguous topic type: '+topic)
-                infos=self.get_publishers_info_by_topic(topic)
+                infos=endpoints[topic]
                 latched=bool(infos) and all(info.qos_profile.durability==DurabilityPolicy.TRANSIENT_LOCAL for info in infos)
                 reliable=bool(infos) and all(info.qos_profile.reliability==ReliabilityPolicy.RELIABLE for info in infos)
                 qos=QoSProfile(depth=20,reliability=ReliabilityPolicy.RELIABLE if reliable else ReliabilityPolicy.BEST_EFFORT,
