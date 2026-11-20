@@ -29,13 +29,14 @@ def validate_config(c):
         if type(padding) is not int or not 0<=padding<=16:raise ValueError('Invalid detection.box_roi_padding_px')
     s=c.get('surround',{})
     if s.get('enabled',False):
-        if len(s['cameras']) not in (2,6) or len(set(v['name'] for v in s['cameras']))!=len(s['cameras']):
-            raise ValueError('Perception requires two or six uniquely named views')
-        if model.get('backend')=='onnx' and len(s['cameras'])!=2:raise ValueError('Current ONNX export requires two cameras')
+        if len(s['cameras']) not in (2,3,6) or len(set(v['name'] for v in s['cameras']))!=len(s['cameras']):
+            raise ValueError('Perception requires two, three or six uniquely named views')
+        if model.get('backend')=='onnx' and len(s['cameras']) not in (2,3):raise ValueError('ONNX detection requires a matching two- or three-camera export')
+        if model.get('task')!='detect' and len(s['cameras'])!=6:raise ValueError('Semantic cube mosaic requires six cameras')
         for k in ('width','height','imgsz'):
             if type(s[k]) is not int or s[k]<128 or s[k]>2048:raise ValueError('Invalid surround.'+k)
         minimum=90 if len(s['cameras'])==6 else 20
-        if s['width']!=s['height'] or not minimum<s['horizontal_fov_deg']<=120:
+        if (len(s['cameras'])==6 and s['width']!=s['height']) or not minimum<s['horizontal_fov_deg']<=120:
             raise ValueError('Invalid square-camera rig FOV (six cube views require >90 degrees)')
         if not 1<=s['max_hz']<=20 or not .1<=s['max_age_s']<=.4:
             raise ValueError('Invalid surround timing budget')

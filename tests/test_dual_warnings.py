@@ -17,19 +17,17 @@ ROOT=Path(__file__).resolve().parents[1]
 
 
 class DualGeometry(unittest.TestCase):
-    def test_two_views_cover_horizontal_100_and_keep_side_vertical_blind_spots(self):
+    def test_three_views_cover_forward_180_and_keep_vertical_blind_spots(self):
         s=yaml.safe_load((ROOT/'config/targeting.yaml').read_text(encoding='utf8'))['surround']
-        self.assertEqual(len(s['cameras']),2)
+        self.assertEqual(len(s['cameras']),3)
         angles=np.radians(np.linspace(-90,90,361))
         pts=np.vstack((np.column_stack((10*np.cos(angles),10*np.sin(angles),np.zeros(len(angles)))),[0,0,10],[0,0,-10],[-10,0,0]))
         pose=(np.zeros(3),np.eye(3));seen=set()
         for v in s['cameras']:
             _,projection=compensated_projection(pts,pose,pose,(np.zeros(3),[0,0,0,1]),optical_pose(v),intrinsics(s),s['width'],s['height'])
             seen.update(projection.point_indices.tolist())
-        covered=np.flatnonzero(abs(np.degrees(angles))<49.9)
-        outside=np.flatnonzero(abs(np.degrees(angles))>50.1)
+        covered=np.flatnonzero(abs(np.degrees(angles))<=90)
         self.assertTrue(set(covered).issubset(seen))
-        self.assertFalse(set(outside)&seen)
         self.assertFalse(any(i in seen for i in (361,362,363)))
 
     def test_letterbox_recovers_original_coordinates_and_drops_invalid_rows(self):
@@ -96,13 +94,13 @@ class WarningGeometry(unittest.TestCase):
         self.assertEqual(upgraded['actors'],original['actors'])
         self.assertEqual(upgraded['experiment']['radius_m'],10)
         self.assertEqual(upgraded['experiment']['region'],'front_hemisphere')
-        self.assertEqual(upgraded['sensors']['width'],1536)
-        self.assertEqual(upgraded['version'],5)
+        self.assertEqual(upgraded['sensors']['width'],1152)
+        self.assertEqual(upgraded['version'],6)
         self.assertEqual(upgraded['sensors']['horizontal_fov_deg'],70)
         upgraded['sensors']['horizontal_fov_deg']=75
         self.assertEqual(upgrade(upgraded)['sensors']['horizontal_fov_deg'],75)
         _,c,_,ue,_=artifacts(upgraded,ROOT)
-        self.assertEqual(set(ue['Vehicles']['Drone1']['Cameras']),{'front_left','front_right'})
+        self.assertEqual(set(ue['Vehicles']['Drone1']['Cameras']),{'front_left','front_center','front_right'})
         self.assertEqual(c['model']['backend'],'onnx')
 
     def test_horizontal_astar_routes_around_wall_without_climbing(self):

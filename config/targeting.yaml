@@ -17,7 +17,7 @@ state:
 model:
   task: detect
   python: ''
-  weights: models/drone_detection_diverse_20261120_b2_1536.onnx
+  weights: models/drone_detection_diverse_20261120_b3_1536.onnx
   confidence: 0.3
   iou: 0.5
   max_det: 128
@@ -59,8 +59,8 @@ extrinsics:
     - 0.0
     rpy_deg:
     - 0.0
-    - 0.0
-    - -15.0
+    - 12.0
+    - -60.0
   lidar:
     xyz_frd_m:
     - 0.0
@@ -198,14 +198,14 @@ ue_detection_boxes:
   global_ned_offset_m: null
 surround:
   enabled: true
-  weights: models/drone_detection_diverse_20261120_b2_1536.onnx
+  weights: models/drone_detection_diverse_20261120_b3_1536.onnx
   front_diagnostic_inference: false
   state_sample_hz: 50.0
-  width: 1536
+  width: 1152
   height: 1536
   horizontal_fov_deg: 70.0
   imgsz: 1536
-  max_hz: 20.0
+  max_hz: 15.0
   max_age_s: 0.35
   min_mask_pixels: 6
   min_lidar_points: 2
@@ -220,13 +220,18 @@ surround:
   - name: front_left
     rpy_deg:
     - 0.0
+    - 12.0
+    - -60.0
+  - name: front_center
+    rpy_deg:
     - 0.0
-    - -15.0
+    - 12.0
+    - 0.0
   - name: front_right
     rpy_deg:
     - 0.0
-    - 0.0
-    - 15.0
+    - 12.0
+    - 60.0
   lidar:
     name: NavigationLidar
     rate_hz: 20.0

@@ -196,6 +196,14 @@ class ExperimentEvaluator(Node):
         self.hemisphere_warning=self.alarm_audit.snapshot(t,score=scoring)
         value=self.audit.snapshot(t,self.visible,score=scoring)
         if value is None:return
+        if not value['valid']:
+            def bounds(history):
+                before=[x[0] for x in history if x[0]<=t]
+                after=[x[0] for x in history if x[0]>=t]
+                return dict(before_s=max(before) if before else None,after_s=min(after) if after else None,
+                    newest_s=history[-1][0] if history else None)
+            value['truth_brackets']=dict(ego=bounds(self.audit.ego),
+                targets={str(i):bounds(self.audit.truth[i]) for i in value.get('missing',[])[:2]})
         value['evaluation_delay_s']=now-t;value['output_dir']=str(self.output)
         value['hemisphere_warning']=self.hemisphere_warning
         value['evaluation_segment']=self.segment

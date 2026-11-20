@@ -123,20 +123,37 @@
           "X": 0.0,
           "Y": 0.0,
           "Z": 0.0,
-          "Roll": 0,
-          "Pitch": 0,
-          "Yaw": -15.0,
+          "Roll": 0.0,
+          "Pitch": 12.0,
+          "Yaw": -60.0,
           "CaptureSettings": [
             {
               "ImageType": 0,
-              "Width": 1536,
+              "Width": 1152,
               "Height": 1536,
               "FOV_Degrees": 70.0,
               "MotionBlurAmount": 0
             },
             {
               "ImageType": 5,
-              "Width": 1536,
+              "Width": 1152,
+              "Height": 1536,
+              "FOV_Degrees": 70.0,
+              "MotionBlurAmount": 0
+            }
+          ]
+        },
+        "front_center": {
+          "X": 0.0,
+          "Y": 0.0,
+          "Z": 0.0,
+          "Roll": 0.0,
+          "Pitch": 12.0,
+          "Yaw": 0.0,
+          "CaptureSettings": [
+            {
+              "ImageType": 0,
+              "Width": 1152,
               "Height": 1536,
               "FOV_Degrees": 70.0,
               "MotionBlurAmount": 0
@@ -147,13 +164,13 @@
           "X": 0.0,
           "Y": 0.0,
           "Z": 0.0,
-          "Roll": 0,
-          "Pitch": 0,
-          "Yaw": 15.0,
+          "Roll": 0.0,
+          "Pitch": 12.0,
+          "Yaw": 60.0,
           "CaptureSettings": [
             {
               "ImageType": 0,
-              "Width": 1536,
+              "Width": 1152,
               "Height": 1536,
               "FOV_Degrees": 70.0,
               "MotionBlurAmount": 0

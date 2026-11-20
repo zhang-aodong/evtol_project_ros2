@@ -71,7 +71,7 @@ class ConfigurationContracts(unittest.TestCase):
         self.assertEqual(scenario['interference_drones']['agents'][0]['coordinate_mode'],'initial_enu')
         original=json.loads((self.root/self.d['ue']['settings']).read_text())
         generated=ue['Vehicles']['Drone1']
-        self.assertEqual(set(generated['Cameras']),{'front_left','front_right'})
+        self.assertEqual(set(generated['Cameras']),{'front_left','front_center','front_right'})
         self.assertEqual(generated,original['Vehicles']['Drone1'])
         self.assertEqual(c['mission']['waypoints_enu_m'],self.d['mission']['waypoints_enu_m'])
 

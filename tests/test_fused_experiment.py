@@ -122,11 +122,11 @@ class AuditContracts(unittest.TestCase):
 
 class ConfigRoundtrip(unittest.TestCase):
     def test_v1_migration_and_full_configuration_roundtrip(self):
-        d=defaults(ROOT);self.assertEqual(d['version'],5)
+        d=defaults(ROOT);self.assertEqual(d['version'],6)
         restored=artifacts(json.loads(json.dumps(d)),ROOT)[0];self.assertEqual(d,restored)
         old=copy.deepcopy(d);old['version']=1
         for k in ('experiment','dynamic','sensors','ui'):old.pop(k)
-        self.assertEqual(upgrade(old)['version'],5)
+        self.assertEqual(upgrade(old)['version'],6)
         _,c,scenario,ue,_=artifacts(d,ROOT)
         self.assertEqual(c['model']['imgsz'],1536);self.assertEqual(ue['Vehicles']['Drone1']['Cameras']['front_left']['CaptureSettings'][0]['FOV_Degrees'],70)
     def test_32_and_64_aircraft_files_roundtrip_without_ego_sensor_duplication(self):

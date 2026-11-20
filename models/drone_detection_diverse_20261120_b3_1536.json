@@ -1,0 +1,17 @@
+{
+  "task": "detect",
+  "backend": "onnxruntime_cuda",
+  "batch": 3,
+  "imgsz": 1536,
+  "precision": "float16",
+  "opset": 17,
+  "weights": "drone_detection_diverse_20261120_b3_1536.onnx",
+  "sha256": "a56b308573bff0f01687306adfda639fb1c3ec3fba2015b42d8e901fb1f60fee",
+  "source_sha256": "a1995552fd05534fab7fa27c0e92437d40b9906e0ceac27030b358128e89a629",
+  "class_map": {
+    "0": 6
+  },
+  "names": {
+    "0": "drone"
+  }
+}

@@ -44,7 +44,7 @@ class Bridge(Node):
                 'mission/status','control/flight_status')}
         self.allowed.update(root+'/perception/roi_lidar/surround_'+view+'/points'
             for view in ('front','right','back','left','up','down'))
-        self.allowed.update(root+'/perception/roi_lidar/'+view+'/points' for view in ('front_left','front_right'))
+        self.allowed.update(root+'/perception/roi_lidar/'+view+'/points' for view in ('front_left','front_center','front_right'))
         self.path_topics={root+'/navigation/waypoint_path',root+'/navigation/traveled_path',root+'/navigation/reference_path'}
         self.path_data={}
         self.allowed.update({'/simulation/reference_origin','/simulation/truth/targets','/simulation/truth/status',

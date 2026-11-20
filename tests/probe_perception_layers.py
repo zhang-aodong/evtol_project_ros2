@@ -23,6 +23,8 @@ def main():
     p.add_argument('--radial-verification',action='store_true')
     p.add_argument('--visible-front',action='store_true',help='Independent visible-sector radial trajectories; full hemisphere denominator retained')
     p.add_argument('--dual-front',action='store_true',help='32 aircraft, two altitude layers, 10 m forward hemisphere warning audit')
+    p.add_argument('--bearing-offset-deg',type=float,default=0.,help='Independent all-bearings trajectory offset')
+    p.add_argument('--layer-heights',type=float,nargs=2,default=[8.,12.],help='Obstacle heights for the all-bearings scenario')
     a=p.parse_args();root=a.root.resolve();cfg=root/'config/console.local.json';original_hash=hashlib.sha256(cfg.read_bytes()).hexdigest()
     origin=root/'data/session_origin.json';original_origin=origin.read_bytes() if origin.exists() else None
     out=root/'reports'/('perception_'+a.label);out.mkdir(exist_ok=True)
@@ -52,8 +54,8 @@ def main():
                 height=9.+3*(i%4);speed=1.8+.07*(i%8)
             if a.dual_front:
                 outer,inner=20.,7.
-                angle=2*math.pi*(i%16)/16+math.radians(11)
-                east,north=math.sin(angle),math.cos(angle);height=8. if i<16 else 12.;speed=1.5+.05*(i%4)
+                angle=2*math.pi*(i%16)/16+math.radians(11+a.bearing_offset_deg)
+                east,north=math.sin(angle),math.cos(angle);height=a.layer_heights[0] if i<16 else a.layer_heights[1];speed=1.5+.05*(i%4)
             agents.append(dict(name='Drone'+str(i+2),speed_mps=speed,spawn_ned_m=[outer*north,outer*east,0.],
                 waypoints_enu_m=[[outer*east,outer*north,height],[inner*east,inner*north,height]],repeat=0))
         engine.config['actors'].update(count=32,agents=agents,initialization='first_waypoint')
@@ -190,6 +192,13 @@ def main():
                     report.update(hemisphere_warning=warning,primary_metric='Actual warning within 0.5 s of each entry into 10 m forward hemisphere',
                         timely_warning_success_rate=timely,warning_encounters=count,
                         scenario='visible_sector_radial' if a.visible_front else 'all_bearings_radial',meets_90=count>=20 and timely is not None and timely>=.9 and coverage>=.95 and airborne>=.8 and error is None)
+        import yaml
+        rig=yaml.safe_load((root/'config/targeting.yaml').read_text(encoding='utf8'))
+        if run and (run/'targeting.yaml').exists():rig=yaml.safe_load((run/'targeting.yaml').read_text(encoding='utf8'))
+        report['rig']={k:rig['surround'][k] for k in ('cameras','width','height','horizontal_fov_deg','weights')}
+        model=root/rig['surround']['weights']
+        if model.exists():report['rig']['model_sha256']=hashlib.sha256(model.read_bytes()).hexdigest()
+        report['trajectory_parameters']=dict(bearing_offset_deg=a.bearing_offset_deg,layer_heights=a.layer_heights)
         (out/'result.json').write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf8')
         (out/'telemetry.json').write_text(json.dumps(samples,ensure_ascii=False),encoding='utf8')
         print(json.dumps(report,ensure_ascii=False),flush=True)

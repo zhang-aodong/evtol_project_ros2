@@ -16,14 +16,23 @@ def v(x=0., y=0., z=0.):
 
 
 def check_camera_projection(info, camera):
-    # AirSim reports the preview camera FOV separately from SceneCapture's FOV.
-    # Its NED projection matrix describes the images actually being captured.
+    # UE4.27 SceneCaptureRendering::BuildProjectionMatrix preserves horizontal
+    # FOV for portrait renders too. AirSim's diagnostic getProjectionMatrix
+    # instead uses a longer-axis multiplier when height > width. Accept that
+    # known metadata convention while retaining the actual capture intrinsics
+    # fx=width/(2*tan(hfov/2)), fy=fx throughout acquisition and localization.
     matrix = np.asarray(info['proj_mat']['matrix'], dtype=float)
     focal = 1. / math.tan(math.radians(camera['horizontal_fov_deg']) / 2.)
-    expected = [focal, -focal * camera['width'] / camera['height']]
-    if matrix.shape != (4, 4) or not np.isfinite(matrix).all() or not np.allclose(
-            [matrix[0, 1], matrix[1, 2]], expected, rtol=1e-3, atol=1e-3):
+    aspect = camera['width'] / camera['height']
+    expected = [focal, -focal * aspect]
+    alternatives = [expected]
+    if aspect < 1.:
+        alternatives.append([focal / aspect, -focal])
+    if matrix.shape != (4, 4) or not np.isfinite(matrix).all() or not any(
+            np.allclose([matrix[0, 1], matrix[1, 2]], value, rtol=1e-3, atol=1e-3)
+            for value in alternatives):
         raise ValueError('AirSim capture projection differs from simulation.yaml')
+
 
 
 class MockBackend:

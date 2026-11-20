@@ -1,4 +1,4 @@
-"""Export a fixed two-camera FP16 YOLO26 ONNX model, using this project's paths."""
+"""Export a fixed multi-camera FP16 YOLO26 ONNX model, using this project's paths."""
 import argparse
 import hashlib
 import json
@@ -13,7 +13,8 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1])
     p.add_argument('--weights',type=Path,default=Path('models/drone_detection.pt'))
-    p.add_argument('--output',type=Path,default=Path('models/drone_detection_b2_1536.onnx'))
+    p.add_argument('--output',type=Path,default=Path('models/drone_detection_diverse_20261120_b3_1536.onnx'))
+    p.add_argument('--batch',type=int,choices=(2,3),default=3,help='Must equal the configured camera count')
     p.add_argument('--size',type=int,default=1536)
     p.add_argument('--device',default='0')
     a=p.parse_args();root=a.root.resolve()
@@ -32,11 +33,11 @@ def main():
         shutil.copyfile(source,checkpoint)
         model=YOLO(str(checkpoint))
         if model.task!='detect':raise ValueError('A detection checkpoint is required')
-        exported=Path(model.export(format='onnx',imgsz=a.size,batch=2,half=True,dynamic=False,
+        exported=Path(model.export(format='onnx',imgsz=a.size,batch=a.batch,half=True,dynamic=False,
             device=a.device,opset=17,simplify=False,nms=False))
         shutil.copyfile(exported,target)
         names={str(k):v for k,v in model.names.items()}
-    manifest=dict(task='detect',backend='onnxruntime_cuda',batch=2,imgsz=a.size,precision='float16',opset=17,
+    manifest=dict(task='detect',backend='onnxruntime_cuda',batch=a.batch,imgsz=a.size,precision='float16',opset=17,
         weights=target.name,sha256=hashlib.sha256(target.read_bytes()).hexdigest(),
         source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),class_map={'0':6},names=names)
     target.with_suffix('.json').write_text(json.dumps(manifest,indent=2),encoding='utf8')

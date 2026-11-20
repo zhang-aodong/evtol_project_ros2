@@ -7,7 +7,7 @@ from evtol_safety.dynamic import DEFAULTS as DYNAMIC
 
 def upgrade(value):
     d=copy.deepcopy(value)
-    if d.get('version') not in (1,2,3,4,5):raise ValueError('Unsupported console configuration version')
+    if d.get('version') not in (1,2,3,4,5,6):raise ValueError('Unsupported console configuration version')
     if d['version']==1:
         d.update(version=2,sensors=dict(horizontal_fov_deg=70.,imgsz=960),
                  experiment=copy.deepcopy(EXPERIMENT),dynamic=copy.deepcopy(DYNAMIC),
@@ -25,6 +25,10 @@ def upgrade(value):
         d['version']=5
         d['dynamic']['horizon_s']=1.
         d['dynamic']['clearance_m']=.3
+    if d['version']==5:
+        d['version']=6
+        d['sensors'].update(width=1152,height=1536)
+        d['sensors']['max_hz']=15.
     from evtol_safety.warnings import DEFAULTS as WARNINGS
     d.setdefault('warnings',copy.deepcopy(WARNINGS))
     return d
@@ -71,7 +75,6 @@ def validate_options(d):
     sensors=d['sensors']
     for name in ('width','height'):
         if type(sensors[name]) is not int or not 1024<=sensors[name]<=2048:raise ValueError('Camera dimensions must be 1024..2048')
-    if sensors['width']!=sensors['height']:raise ValueError('Current dual rig requires square camera images')
     if not 1<=sensors['max_hz']<=20:raise ValueError('Invalid camera inference rate')
     if sensors['imgsz']!=1536:raise ValueError('Current fixed-shape ONNX export requires imgsz=1536; re-export before changing it')
     if d['experiment']['region']!='front_hemisphere' or d['experiment']['radius_m']!=d['warnings']['fusion_radius_m']:
