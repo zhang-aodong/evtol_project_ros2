@@ -35,7 +35,9 @@ class SurroundVision(Node):
 
     def run(self):
         try:
-            c=copy.deepcopy(self.c);c['model']['imgsz']=self.s['imgsz'];c['model'].update(tile_rows=2,tile_cols=3)
+            cols=len(self.s['cameras']) if self.detect else 3
+            rows=1 if self.detect else 2
+            c=copy.deepcopy(self.c);c['model']['imgsz']=self.s['imgsz'];c['model'].update(tile_rows=rows,tile_cols=cols)
             if self.s.get('weights'):c['model']['weights']=self.s['weights']
             self.client=ModelClient(c)
             self.get_logger().info('Surround '+self.client.info['task']+' model ready: '+str(self.client.info))
@@ -47,7 +49,7 @@ class SurroundVision(Node):
                     except OSError:
                         if time.monotonic()>deadline:raise
                         self.stop.wait(.1)
-            last=0;seq=0
+            last=0;seq=0;last_preview=0.
             while not self.stop.is_set():
                 begun=time.perf_counter()
                 try:first=self.readers[0].read_latest()
@@ -68,9 +70,9 @@ class SurroundVision(Node):
                 age=(self.get_clock().now().nanoseconds-last)*1e-9
                 if age>self.s['max_age_s']:self.health.dropped+=1;continue
                 self.exposure.publish(String(data=json.dumps(dict(stamp_ns=last))))
-                mosaic=np.empty((h*2,w*3,3),np.uint8)
+                mosaic=np.empty((h*rows,w*cols,3),np.uint8)
                 for i,f in enumerate(frames):
-                    mosaic[(i//3)*h:(i//3+1)*h,(i%3)*w:(i%3+1)*w]=np.frombuffer(f.bgr_bytes,np.uint8).reshape(h,w,3)
+                    mosaic[(i//cols)*h:(i//cols+1)*h,(i%cols)*w:(i%cols+1)*w]=np.frombuffer(f.bgr_bytes,np.uint8).reshape(h,w,3)
                 seq+=1;prediction,ms=self.client.predict(mosaic,seq)
                 if self.detect:
                     from .box_localization import normalize_detections
@@ -81,23 +83,28 @@ class SurroundVision(Node):
                     self.boxes.publish(String(data=json.dumps(message,allow_nan=False)))
                     self.health.ok();self.health.details=dict(task='detect',inference_ms=round(ms,2),
                         output_age_ms=round((self.get_clock().now().nanoseconds-last)*1e-6,2),
-                        views=len(frames),boxes=len(boxes),drone_boxes=sum(b['class_id']==6 for b in boxes))
-                    annotated=mosaic.copy()
-                    for b in boxes:
-                        i=b['view_index'];x1,y1,x2,y2=b['xyxy'];dx,dy=(i%3)*w,(i//3)*h
-                        p=(round(x1)+dx,round(y1)+dy);q=(round(x2)+dx,round(y2)+dy)
-                        cv2.rectangle(annotated,p,q,(0,255,80),2)
-                        cv2.putText(annotated,'drone %.2f'%b['confidence'],(p[0],max(dy+14,p[1]-4)),
-                            cv2.FONT_HERSHEY_SIMPLEX,.5,(0,255,80),1,cv2.LINE_AA)
-                    images=[(self.rgb,mosaic),(self.preview,annotated)]
+                        views=len(frames),backend=self.client.info.get('backend','torch'),boxes=len(boxes),drone_boxes=sum(b['class_id']==6 for b in boxes))
+                    images=[]
+                    if time.monotonic()-last_preview>=1/self.s.get('preview_hz',5.):
+                        annotated=mosaic.copy()
+                        for b in boxes:
+                            i=b['view_index'];x1,y1,x2,y2=b['xyxy'];dx,dy=(i%cols)*w,(i//cols)*h
+                            p=(round(x1)+dx,round(y1)+dy);q=(round(x2)+dx,round(y2)+dy)
+                            cv2.rectangle(annotated,p,q,(0,255,80),2)
+                            cv2.putText(annotated,'drone %.2f'%b['confidence'],(p[0],max(dy+14,p[1]-4)),
+                                cv2.FONT_HERSHEY_SIMPLEX,.5,(0,255,80),1,cv2.LINE_AA)
+                        images=[(self.rgb,mosaic),(self.preview,annotated)]
                 else:
                     mask=prediction
                     self.publish_semantics(mask,last,seq,ms,frames)
                     palette=np.array([[0,0,0],[6,108,153],[191,105,112],[72,121,89],[64,225,190],[59,190,206],[36,13,81]],np.uint8)
                     images=[(self.rgb,mosaic),(self.preview,palette[np.clip(mask,0,6)])]
                 for pub,im in images:
+                    width=int(self.s.get('preview_width',1536))
+                    if im.shape[1]>width:im=cv2.resize(im,(width,round(im.shape[0]*width/im.shape[1])),interpolation=cv2.INTER_AREA)
                     ok,jpg=cv2.imencode('.jpg',im,[cv2.IMWRITE_JPEG_QUALITY,75])
                     if ok:pub.publish(CompressedImage(header=header(last,self.c['namespace']+'/surround_mosaic'),format='jpeg',data=jpg.tobytes()))
+                if images:last_preview=time.monotonic()
                 self.stop.wait(max(0,1/self.s['max_hz']-(time.perf_counter()-begun)))
         except Exception as exc:self.health.error(exc)
         finally:

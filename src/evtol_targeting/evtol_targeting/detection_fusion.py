@@ -51,8 +51,9 @@ class DetectionFusion(Localizer):
                 raise ValueError('Detection frame geometry/schema mismatch')
             if data['cameras']!=[v['name'] for v in self.s['cameras']]:raise ValueError('Detection camera order mismatch')
             if stamp<=self.last_image_ns:return
-            if len(data['detections'])>6*self.c['model']['max_det']:raise ValueError('Detection budget exceeded')
-            boxes=normalize_detections(data['detections'],self.c['model'],data['width'],data['height'],6)
+            views=len(self.s['cameras'])
+            if len(data['detections'])>views*self.c['model']['max_det']:raise ValueError('Detection budget exceeded')
+            boxes=normalize_detections(data['detections'],self.c['model'],data['width'],data['height'],views)
             # source class 0 is mapped to canonical drone class 6 exactly once.
             if len(boxes)!=len(data['detections']):raise ValueError('Invalid detector output')
             frame=SimpleNamespace(header=header(stamp),boxes=boxes)

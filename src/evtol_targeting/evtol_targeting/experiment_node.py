@@ -13,6 +13,7 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import CameraInfo
 from std_msgs.msg import String
 from visualization_msgs.msg import Marker,MarkerArray
+from geometry_msgs.msg import Point
 from evtol_perception_interfaces.msg import ReferenceOrigin,TargetArray,Risk
 from evtol_simulation.coordinates import extrinsic,quaternion_matrix
 from .common import args_config,project_path,ns,xyz,header,put,LATCHED,Health
@@ -27,7 +28,9 @@ class ExperimentEvaluator(Node):
         actors=yaml.safe_load(project_path(c,c['actors_config']).read_text(encoding='utf-8-sig'))
         self.expected=[i+1 for i,_ in enumerate(actors['interference_drones']['agents'])] if actors['interference_drones']['enabled'] else []
         self.names={i+1:a['vehicle_name'] for i,a in enumerate(actors['interference_drones']['agents'])}
-        self.audit=RangeAudit(self.expected,self.o);self.origin=None;self.pending=deque(maxlen=128);self.poses=deque(maxlen=400)
+        self.audit=RangeAudit(self.expected,self.o);self.alarm_audit=RangeAudit(self.expected,self.o)
+        self.warning_pending=deque(maxlen=128);self.lidar_warning=None;self.fusion_warning=None;self.hemisphere_warning=None
+        self.origin=None;self.pending=deque(maxlen=128);self.poses=deque(maxlen=400)
         self.last_clock=None;self.last_tick=None;self.last_publish=0.;self.last_event=0;self.last=None;self.segment=0
         self.camera=None;self.actors=None;self.warning=None;self.latest_risks=None;self.latest_risks_wall=0.
         self.flight=None;self.flight_wall=0.
@@ -55,6 +58,8 @@ class ExperimentEvaluator(Node):
         self.create_subscription(CameraInfo,root+'/camera/rgb/camera_info',lambda m:setattr(self,'camera',m),qos_profile_sensor_data)
         self.create_subscription(String,'/scenario/status',lambda m:setattr(self,'actors',json.loads(m.data)),LATCHED)
         self.create_subscription(String,root+'/safety/risks',self.receive_risks,10)
+        self.create_subscription(String,root+'/warning/fusion',self.receive_fusion_warning,10)
+        self.create_subscription(String,root+'/warning/lidar',lambda m:setattr(self,'lidar_warning',json.loads(m.data)),10)
         self.create_subscription(String,root+'/control/flight_status',self.receive_flight,LATCHED)
         self.create_subscription(String,'/simulation/truth/status',self.receive_truth_status,10)
         self.create_timer(.025,self.tick,clock=self.wall_clock)
@@ -66,6 +71,14 @@ class ExperimentEvaluator(Node):
             if not self.origin or value.get('session_id')!=self.origin.session_id:return
             self.latest_risks=value;self.latest_risks_wall=time.monotonic();self.risk_history.append(value)
         except ValueError:pass
+
+    def receive_fusion_warning(self,msg):
+        try:
+            value=json.loads(msg.data)
+            if self.origin and value.get('session_id')==self.origin.session_id:
+                self.fusion_warning=value
+                self.warning_pending.append((self.get_clock().now().nanoseconds*1e-9,value))
+        except (ValueError,KeyError):pass
 
     def receive_flight(self,msg):
         try:
@@ -84,6 +97,8 @@ class ExperimentEvaluator(Node):
     def reset(self,session):
         self.segment+=1
         self.audit=RangeAudit(self.expected,self.o);self.audit.session=session
+        self.alarm_audit=RangeAudit(self.expected,self.o);self.alarm_audit.session=session
+        self.warning_pending.clear();self.lidar_warning=None;self.fusion_warning=None;self.hemisphere_warning=None
         self.pending.clear();self.poses.clear();self.last_tick=None;self.last_event=0;self.last=None
         self.latest_risks=None;self.flight=None;self.flight_wall=0.
         self.truth_status=None;self.collisions=set();self.scoring_started=None
@@ -100,13 +115,15 @@ class ExperimentEvaluator(Node):
         t=ns(msg.header.stamp)*1e-9
         q=msg.pose.pose.orientation;r=quaternion_matrix([q.x,q.y,q.z,q.w])
         # Odometry twist is expressed in the child frame.
-        self.audit.add_ego(t,xyz(msg.pose.pose.position),r@xyz(msg.twist.twist.linear))
+        for audit in (self.audit,self.alarm_audit):
+            audit.add_ego(t,xyz(msg.pose.pose.position),r@xyz(msg.twist.twist.linear),r[:,0])
         self.poses.append((t,xyz(msg.pose.pose.position),r))
 
     def receive_truth(self,msg):
         if self.origin is None or msg.session_id!=self.origin.session_id or msg.header.frame_id!='map_enu':return
         for target in msg.targets:
-            self.audit.add_truth(int(target.track_id),ns(target.last_measurement_stamp)*1e-9,xyz(target.position),xyz(target.velocity))
+            for audit in (self.audit,self.alarm_audit):
+                audit.add_truth(int(target.track_id),ns(target.last_measurement_stamp)*1e-9,xyz(target.position),xyz(target.velocity))
 
     def receive_measurements(self,msg):
         if self.origin is None or msg.session_id!=self.origin.session_id or msg.header.frame_id!='map_enu':return
@@ -114,6 +131,17 @@ class ExperimentEvaluator(Node):
         self.pending.append((self.get_clock().now().nanoseconds*1e-9,msg))
 
     def visible(self,identity,position):
+        if self.c.get('surround',{}).get('enabled',False) and self.poses:
+            from .surround_geometry import optical_pose,intrinsics
+            s=self.c['surround'];t=self.audit.last_t;pose=min(self.poses,key=lambda p:abs(p[0]-t))
+            if abs(pose[0]-t)>self.o['truth_max_gap_s']:return False
+            body=(position-pose[1])@pose[2];k=intrinsics(s)
+            for view in s['cameras']:
+                offset,q=optical_pose(view);optical=(body-offset)@quaternion_matrix(q)
+                if optical[2]<=0:continue
+                uv=k@optical;u,v=uv[:2]/uv[2]
+                if 0<=u<s['width'] and 0<=v<s['height']:return True
+            return False
         if not self.camera or not self.poses:return False
         t=self.audit.last_t;pose=min(self.poses,key=lambda p:abs(p[0]-t))
         if abs(pose[0]-t)>self.o['truth_max_gap_s']:return False
@@ -157,9 +185,19 @@ class ExperimentEvaluator(Node):
         # No unbounded catch-up after stalls; missed epochs are explicit.
         scoring=not self.o['score_only_flying'] or bool(self.flight and self.flight.get('phase')=='flying' and time.monotonic()-self.flight_wall<2.)
         if scoring and self.scoring_started is None:self.scoring_started=t
+        waiting=[]
+        for available,warning in self.warning_pending:
+            wt=warning['stamp_ns']*1e-9
+            detections=[dict(track_id=d['track_id'],position=np.asarray(d['position_enu_m']),class_id=6)
+                        for d in warning['targets'] if warning['valid'] and d['warning']]
+            row=self.alarm_audit.measure(wt,available,detections)
+            if row is None and now-wt<=self.o['buffer_s']:waiting.append((available,warning))
+        self.warning_pending.clear();self.warning_pending.extend(waiting)
+        self.hemisphere_warning=self.alarm_audit.snapshot(t,score=scoring)
         value=self.audit.snapshot(t,self.visible,score=scoring)
         if value is None:return
         value['evaluation_delay_s']=now-t;value['output_dir']=str(self.output)
+        value['hemisphere_warning']=self.hemisphere_warning
         value['evaluation_segment']=self.segment
         value['pipeline']=dict(self.pipeline)
         value['skipped_epochs']=skipped
@@ -186,7 +224,7 @@ class ExperimentEvaluator(Node):
         for f in self.files.values():f.flush()
         self.draw(value)
         self.publish_warning(value)
-        summary=dict(schema_version=1,session_id=self.audit.session,last=value,ended=False)
+        summary=dict(schema_version=1,session_id=self.audit.session,last=value,hemisphere_warning=self.hemisphere_warning,ended=False)
         (self.output/'run_summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding='utf8')
 
     def publish_warning(self,value):
@@ -220,7 +258,10 @@ class ExperimentEvaluator(Node):
             truth_risk_count=len(risks) if value['valid'] else None,truth_risks=risks,algorithm=algorithm,
             labeled_event_metrics=labels,
             contract_precision=labels['precision'] if labels else None,
-            contract_false_alarm_rate=labels['false_alarm_rate'] if labels else None),self.warning_pub)
+            contract_false_alarm_rate=labels['false_alarm_rate'] if labels else None,
+            hemisphere=self.hemisphere_warning,lidar=self.lidar_warning,fusion=self.fusion_warning,
+            primary_metric='timely_warning_per_entry_into_forward_hemisphere',target_success_rate=self.c.get('warnings',{}).get('target_success_rate',.9),
+            hemisphere_miss_rate=(1-self.hemisphere_warning['timely_success_rate']) if self.hemisphere_warning and self.hemisphere_warning.get('timely_success_rate') is not None else None),self.warning_pub)
 
     def draw(self,value):
         t=int(value['stamp_s']*1e9);markers=[Marker(action=Marker.DELETEALL)]
@@ -229,6 +270,18 @@ class ExperimentEvaluator(Node):
             m=Marker(header=header(t),ns='evaluation_range',id=0,type=Marker.SPHERE,action=Marker.ADD)
             put(m.pose.position,ego[0]);m.pose.orientation.w=1.
             m.scale.x=m.scale.y=m.scale.z=2*self.o['radius_m'];m.color.b=1.;m.color.g=.5;m.color.a=.06
+            if self.o['region']=='front_hemisphere' and value.get('forward_enu'):
+                m.type=Marker.LINE_LIST;m.scale.x=.04;m.color.a=.6
+                f=np.asarray(value['forward_enu']);axis=np.array([0.,0.,1.]) if abs(f[2])<.9 else np.array([0.,1.,0.])
+                side=np.cross(f,axis);side/=np.linalg.norm(side);up=np.cross(side,f)
+                def local(theta,phi):
+                    return self.o['radius_m']*(np.cos(theta)*f+np.sin(theta)*(np.cos(phi)*side+np.sin(phi)*up))
+                paths=[[(th,ph) for th in np.linspace(0,np.pi/2,19)] for ph in np.linspace(0,2*np.pi,13)]
+                paths += [[(th,ph) for ph in np.linspace(0,2*np.pi,73)] for th in np.linspace(0,np.pi/2,7)]
+                for path in paths:
+                    for a,b in zip(path,path[1:]):
+                        for theta,phi in (a,b):
+                            point=Point();put(point,local(theta,phi));m.points.append(point)
             markers.append(m)
         for row in value.get('targets',[]):
             m=Marker(header=header(t),ns='evaluation_truth',id=int(row['identity']),type=Marker.CUBE,action=Marker.ADD)
@@ -238,7 +291,7 @@ class ExperimentEvaluator(Node):
         self.markers_pub.publish(MarkerArray(markers=markers))
 
     def close(self):
-        summary=dict(schema_version=1,session_id=self.audit.session,last=self.last,ended=True,
+        summary=dict(schema_version=1,session_id=self.audit.session,last=self.last,hemisphere_warning=self.hemisphere_warning,ended=True,
             end_reason='node_shutdown',pending_encounters=sum(e['result']=='pending' for e in self.audit.active.values()))
         (self.output/'run_summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding='utf8')
         for f in self.files.values():f.close()

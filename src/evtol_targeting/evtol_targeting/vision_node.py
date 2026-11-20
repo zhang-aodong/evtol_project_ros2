@@ -26,12 +26,13 @@ class ModelClient:
         if not Path(python).is_file():raise FileNotFoundError('Configure ModelPython in config/machine.local.json or EVTOL_MODEL_PYTHON')
         worker=Path(__file__).with_name('model_worker.py')
         env=os.environ.copy();env.pop('PYTHONHOME',None)
-        env['PYTHONPATH']=str(project_path(c,m['vendor']));env['YOLO_AUTOINSTALL']='false'
+        env['PYTHONPATH']=os.pathsep.join([str(project_path(c,m['vendor'])),str(project_path(c,'models/onnx_runtime'))]);env['YOLO_AUTOINSTALL']='false'
         env['OMP_NUM_THREADS']='1';env['OPENBLAS_NUM_THREADS']='1'
         env['PATH']=os.pathsep.join([str(Path(python).parent/p) for p in ('','Library/bin','Scripts')]+[env['PATH']])
         self.process=subprocess.Popen([python,'-u',str(worker),'--weights',str(project_path(c,m['weights'])),
             '--vendor',str(project_path(c,m['vendor'])),'--device',str(m['device']),'--imgsz',str(m['imgsz']),
             '--task',str(m.get('task','semantic')),'--confidence',str(m.get('confidence',.25)),
+            '--backend',str(m.get('backend','torch')),*(['--require-gpu'] if m.get('require_gpu',False) else []),
             '--iou',str(m.get('iou',.5)),'--max-det',str(m.get('max_det',128)),
             '--parent-pid',str(os.getpid()),'--tile-rows',str(m.get('tile_rows',1)),'--tile-cols',str(m.get('tile_cols',1))],
             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=None,text=True,encoding='utf8',env=env,

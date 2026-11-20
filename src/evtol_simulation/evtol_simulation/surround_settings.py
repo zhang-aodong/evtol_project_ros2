@@ -3,7 +3,8 @@
 def camera_settings(s, view):
     r,p,y=view['rpy_deg']
     return dict(X=0.,Y=0.,Z=0.,Roll=r,Pitch=p,Yaw=y,CaptureSettings=[
-        dict(ImageType=i,Width=s['width'],Height=s['height'],FOV_Degrees=s['horizontal_fov_deg'],MotionBlurAmount=0) for i in (0,5)])
+        dict(ImageType=i,Width=s['width'],Height=s['height'],FOV_Degrees=s['horizontal_fov_deg'],MotionBlurAmount=0)
+        for i in ((0,5) if s.get('record_truth',False) or view['name']==s['cameras'][0]['name'] else (0,))])
 
 
 def lidar_settings(lc):

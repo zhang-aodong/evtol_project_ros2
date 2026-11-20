@@ -138,6 +138,42 @@ class NodeContracts(unittest.TestCase):
                 self.assertGreater(velocity@(np.asarray(goal)-[0.,0.,3.]),0.)
             finally:node.destroy_node()
 
+    def test_async_wait_keeps_sampled_speed_reference_and_velocity_safety(self):
+        from evtol_safety.async_navigation import AsyncNavigator
+        class Pending(AsyncNavigator):
+            def plan(self,*args):self.reason='waiting_for_async_plan';return None
+        node=self.navigation_node([20.,0.,3.])
+        try:
+            node.navigator=Pending(node.c['navigation'])
+            node.tick()
+            self.assertTrue(node.risk_pub.messages[-1].valid)
+            desired=node.desired_pub.messages[-1].velocity
+            self.assertAlmostEqual(np.linalg.norm([desired.x,desired.y,desired.z]),node.c['mission']['speed_mps'])
+            self.assertEqual(node.safety_data['reference_fallback'],'local_velocity_while_planning')
+            self.assertLessEqual(np.linalg.norm([node.pub.messages[-1].velocity.x,node.pub.messages[-1].velocity.y,node.pub.messages[-1].velocity.z]),node.c['mission']['speed_mps'])
+        finally:node.destroy_node()
+
+    def test_planning_is_two_hz_but_safety_runs_on_every_tick(self):
+        node=self.navigation_node([20.,0.,3.])
+        class Planner:
+            path=[];reason='direct'
+            def __init__(self):self.calls=0
+            def plan(self,p,goal,points):
+                self.calls+=1;self.path=[p.copy(),goal.copy()];return goal.copy()
+        planner=Planner();node.navigator=planner;node.c['navigation']['replan_period_s']=.5
+        base=time.perf_counter()
+        try:
+            for i in range(21):
+                wall=base+i*.05
+                with patch('evtol_safety.node.time.perf_counter',return_value=wall):
+                    node.pose_wall=wall;node.cloud_wall=wall;node.flight_wall=wall
+                    node.cloud_history=type(node.cloud_history)([(node.cloud,wall)],maxlen=8)
+                    node.tick()
+            self.assertEqual(planner.calls,3)
+            self.assertEqual(len(node.pub.messages),21)
+            self.assertTrue(all(m.valid for m in node.risk_pub.messages))
+        finally:node.destroy_node()
+
     def test_navigation_takeoff_excludes_support_and_keeps_raised_obstacles(self):
         node=self.navigation_node([0.,0.,3.],position=(0.,0.,0.),points=((0.,0.,-.2),(5.,0.,2.)),phase='takeoff')
         try:
@@ -175,6 +211,14 @@ class NodeContracts(unittest.TestCase):
                 self.assertEqual(len(node.measurements.messages[-1].targets),expected)
             finally:node.destroy_node()
 
+    def test_completed_mission_corrects_hover_altitude_drift(self):
+        node=self.navigation_node([0.,0.,3.],position=(0.,0.,2.8))
+        try:
+            node.mission.completed=True;node.tick();cmd=node.pub.messages[-1]
+            self.assertGreater(cmd.velocity.z,0.)
+            self.assertEqual(cmd.reason,'mission_hold')
+        finally:node.destroy_node()
+
     def test_completed_airborne_mission_keeps_side_collision_avoidance(self):
         from evtol_perception_interfaces.msg import TargetArray,Target
         from evtol_targeting.common import stamp
@@ -182,17 +226,22 @@ class NodeContracts(unittest.TestCase):
         try:
             node.mission.completed=True
             t=node.get_clock().now().nanoseconds
-            target=Target(track_id=1_000_001,class_id=0,state='confirmed',
-                last_measurement_stamp=stamp(t),reference_kind='lidar_cluster_unclassified')
+            target=Target(track_id=1,class_id=6,state='confirmed',
+                last_measurement_stamp=stamp(t),reference_kind='vision_lidar')
             target.position.y=5.;target.position.z=3.;target.velocity.y=-2.
             target.size.x=target.size.y=1.;target.size.z=.5
-            msg=TargetArray(header=header(t),session_id='navigation-test',lidar_stamp=stamp(t),targets=[target])
-            node.receive_lidar_tracks(msg);node.tick()
-            cmd=node.pub.messages[-1]
-            self.assertIn(cmd.reason,('dynamic_evasive_velocity','lidar_dynamic_avoidance'))
-            self.assertGreater(np.linalg.norm([cmd.velocity.x,cmd.velocity.y,cmd.velocity.z]),.05)
-            target.state='tentative';msg.targets=[target];node.receive_lidar_tracks(msg);node.tick()
+            msg=TargetArray(header=header(t),session_id='navigation-test',image_stamp=stamp(t),lidar_stamp=stamp(t),targets=[target])
+            node.receive_tracks(msg);node.tick()
             self.assertEqual(node.pub.messages[-1].reason,'mission_complete')
+            # With the short avoidance horizon, act once the measured side
+            # approach actually threatens the next second of flight.
+            target.position.y=3.4;msg.targets=[target];node.receive_lidar_tracks(msg);node.tracks=None;node.tick()
+            self.assertEqual(node.pub.messages[-1].reason,'mission_complete')
+            node.receive_tracks(msg);node.tick()
+            cmd=node.pub.messages[-1]
+            self.assertIn(cmd.reason,('dynamic_evasive_velocity','fused_dynamic_avoidance'),
+                (node.safety_data,node.dynamic,node.health.details,node.risk_pub.messages[-1]))
+            self.assertGreater(np.linalg.norm([cmd.velocity.x,cmd.velocity.y,cmd.velocity.z]),.05)
             node.flight_phase='stopped';node.tick()
             cmd=node.pub.messages[-1]
             np.testing.assert_allclose([cmd.velocity.x,cmd.velocity.y,cmd.velocity.z],0.)

@@ -23,7 +23,7 @@ class DetectionFusionContracts(unittest.TestCase):
     def tearDownClass(cls):rclpy.shutdown()
 
     def setup_node(self):
-        c=yaml.safe_load((ROOT/'config/targeting.yaml').read_text(encoding='utf8'));c['_root']=ROOT
+        c=yaml.safe_load((ROOT/'tests/fixtures/legacy_targeting.yaml').read_text(encoding='utf8'));c['_root']=ROOT
         node=DetectionFusion(c);self.addCleanup(node.destroy_node)
         node.receive_origin(ReferenceOrigin(session_id='detect-test'))
         now=node.get_clock().now().nanoseconds;node.set_parameters([Parameter('use_sim_time',value=True)])

@@ -143,6 +143,7 @@ class AirSimBackend:
         name = f"shm_push_start:{self.vehicle}:{c['name']}:{self.c['rates']['camera']:.6f}"
         requests = [image_request(name, i) for i in (0, 5)]
         for camera in c.get('surround_cameras', []):
+            if camera==c['name']:continue  # the primary view was started above
             key = f"shm_push_start:{self.vehicle}:{camera}:{self.c['rates']['camera']:.6f}"
             requests.append(image_request(key, 0))
             if c.get('surround_record_truth',False):requests.append(image_request(key, 5))

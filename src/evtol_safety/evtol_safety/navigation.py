@@ -13,6 +13,10 @@ class WaypointMission:
         self.index=0;self.settled_since=None;self.phase='waiting';self.completed=False;self.takeoff_target=None;self.landing_started=False
         self.land=bool(settings.get('land_at_last',True) and
             abs(self.points[-1,2]-settings.get('landing_ground_z_m',0.))<=settings.get('landing_target_tolerance_m',.25))
+        # A ground endpoint with landing disabled means hold at handoff height.
+        # Trying to fly an ordinary waypoint into the support surface deadlocks.
+        self.ground_hold=bool(not self.land and
+            abs(self.points[-1,2]-settings.get('landing_ground_z_m',0.))<=settings.get('landing_target_tolerance_m',.25))
 
     def reference(self,position,velocity,now,flight_phase='flying'):
         p=np.asarray(position);v=np.asarray(velocity)
@@ -25,9 +29,12 @@ class WaypointMission:
             self.phase='takeoff';return self.takeoff_target.copy(),self.phase
         if flight_phase in ('waiting','arming','stopped','failed','shadow'):
             self.phase=flight_phase;return p.copy(),self.phase
+        # Collinear mission waypoints are pass-through gates, not hover stops.
+        if self.c.get('mode','waypoints')=='waypoints' and flight_phase=='flying' and self.pass_through() and self._passed(position):
+            self.index+=1;self.settled_since=None
         target=self.points[self.index].copy();last=self.index==len(self.points)-1
         landing=last and self.land
-        if landing:target[2]+=self.c.get('landing_handoff_m',1.)
+        if landing or (last and self.ground_hold):target[2]+=self.c.get('landing_handoff_m',1.2)
         if self.landing_started:self.phase='landing';return target,self.phase
         distance=float(np.linalg.norm(target-p))
         settled=distance<=self.c['tolerance_m'] and np.linalg.norm(v)<=self.c.get('arrival_speed_mps',.3)
@@ -40,10 +47,24 @@ class WaypointMission:
                     self.completed=True;self.phase='complete';return p.copy(),self.phase
                 target=self.points[self.index].copy()
                 landing=self.index==len(self.points)-1 and self.land
-                if landing:target[2]+=self.c.get('landing_handoff_m',1.)
+                if landing or (self.index==len(self.points)-1 and self.ground_hold):target[2]+=self.c.get('landing_handoff_m',1.2)
         else:self.settled_since=None
         self.phase='landing' if flight_phase=='landing' else ('landing_approach' if landing else 'waypoint')
         return target,self.phase
+
+    def pass_through(self):
+        if self.c.get('mode','waypoints')!='waypoints' or not 0<self.index<len(self.points)-1:return False
+        a=self.points[self.index]-self.points[self.index-1]
+        b=self.points[self.index+1]-self.points[self.index]
+        norm=np.linalg.norm(a)*np.linalg.norm(b)
+        return bool(norm>1e-9 and a@b/norm>.999)
+
+    def _passed(self,position):
+        goal=self.points[self.index];relative=np.asarray(position)-goal
+        incoming=goal-self.points[self.index-1];incoming/=max(np.linalg.norm(incoming),1e-9)
+        along=float(relative@incoming);cross=np.linalg.norm(relative-along*incoming)
+        return bool(np.linalg.norm(relative)<=self.c['tolerance_m'] or
+                    (0<=along<=self.c['tolerance_m'] and cross<=self.c['tolerance_m']))
 
 
 class VoxelNavigator:
@@ -60,6 +81,10 @@ class VoxelNavigator:
         self.path_goal=None
         self.moves=np.array([d for d in itertools.product((-1,0,1),repeat=3) if any(d)],int)
         self.move_cost=np.linalg.norm(self.moves,axis=1)*self.res
+        if settings.get('horizontal_only',False):
+            self.moves=self.moves[self.moves[:,2]==0]
+            self.move_cost=np.linalg.norm(self.moves,axis=1)*self.res
+        self.move_cost+=abs(self.moves[:,2])*self.res*float(settings.get('vertical_cost',1.5))
 
     def plan(self,start,goal,points):
         start=np.asarray(start,float);goal=np.asarray(goal,float);points=np.asarray(points,float).reshape(-1,3)
@@ -148,3 +173,23 @@ class VoxelNavigator:
             delta=point-start;distance=float(np.linalg.norm(delta))
             if distance>1e-5:return start+delta*min(1.,self.lookahead/distance)
         return np.asarray(start).copy()
+
+
+class HorizontalFirstNavigator:
+    """Bounded horizontal A* first, followed by full 26-neighbor 3-D A*."""
+    def __init__(self,settings):
+        budget=float(settings.get('search_budget_s',.08))
+        self.horizontal=VoxelNavigator(dict(settings,horizontal_only=True,search_budget_s=budget*.4))
+        self.spatial=VoxelNavigator(dict(settings,horizontal_only=False,search_budget_s=budget*.6))
+        self.path=[];self.reason='waiting';self.settings=settings
+
+    def plan(self,p,goal,points):
+        if abs(goal[2]-p[2])<=self.horizontal.res*.5:
+            level=np.asarray(goal).copy();level[2]=p[2]
+            aim=self.horizontal.plan(p,level,points)
+            if aim is not None:
+                self.path=self.horizontal.path;self.reason='horizontal_'+self.horizontal.reason
+                return aim
+        aim=self.spatial.plan(p,goal,points)
+        self.path=self.spatial.path;self.reason=('spatial_' if aim is not None else '')+self.spatial.reason
+        return aim

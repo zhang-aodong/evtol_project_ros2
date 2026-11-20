@@ -17,10 +17,13 @@ from evtol_perception_interfaces.msg import ReferenceOrigin, StateStatus, Target
 from evtol_targeting.common import args_config, ns, header, stamp, xyz, put, odom_arrays, LATCHED, LATEST, Health
 from evtol_targeting.geometry import PoseHistory, cloud_xyz
 from .velocity import LocalVelocityAvoidance
-from .navigation import WaypointMission,VoxelNavigator
+from .navigation import WaypointMission,VoxelNavigator,HorizontalFirstNavigator
+from .route_following import SampledLeg,cruise_velocity
 from .profile import make_mission
 from .dynamic import DEFAULTS as DYNAMIC_DEFAULTS,from_targets,candidate_clearance
 from .async_navigation import AsyncNavigator
+from .corridor import local_points,near_obstacles,route_aim
+from .layers import emergency_points,fused_route_points,descent_limit,hold_velocity
 
 
 def closest_approach(relative_position,relative_velocity,horizon):
@@ -35,18 +38,25 @@ class SafetyNode(Node):
         self.health=Health(self,self.root+'/safety');self.pose=None;self.pose_wall=None;self.state_valid=False
         self.navigation=c.get('navigation_lidar',{}).get('enabled',False)
         self.mission=make_mission(c['mission'])
-        self.navigator=(AsyncNavigator if c.get('navigation',{}).get('async_planning',True) else VoxelNavigator)(c.get('navigation',{}))
+        nav=c.get('navigation',{})
+        synchronous=HorizontalFirstNavigator if nav.get('strategy')=='horizontal_first_astar' else VoxelNavigator
+        self.navigator=(AsyncNavigator if nav.get('async_planning',True) else synchronous)(nav)
+        self.reference=SampledLeg(nav)
         self.dynamic={**DYNAMIC_DEFAULTS,**c['safety'].get('dynamic',{})};self.last_risks=0.
         self.tracks_wall=None
         self.lidar_tracks=None;self.lidar_tracks_wall=None
         self.flight_phase='waiting' if self.navigation else 'flying';self.flight_wall=0.
         self.last_plan=0.;self.aim=None;self.plan_goal=None;self.status_reason='waiting'
+        self.local_goal=None;self.plan_count=0
         self.history=PoseHistory(c['fusion']['pose_max_gap_s']);self.cloud=None;self.cloud_wall=None
         self.cloud_history=deque(maxlen=8)
         self.scan_cache={};self.navigation_ready_since=None;self.safety_data={}
+        if getattr(self.mission,'ground_hold',False):
+            self.get_logger().warning('Ground endpoint with land_at_last=false: hold above touchdown at landing_handoff_m; enable land_at_last for touchdown')
         self.last_cloud_ns=0;self.tracks=None;self.sequence=0;self.goal_index=0;self.previous_wall=time.perf_counter()
         self.planner=LocalVelocityAvoidance(c['safety']['local_velocity'],sensor_timeout_s=c['safety']['cloud_timeout_s'],
             command_duration_s=c['control']['duration_s'],sweep_retention_s=0.)
+        if c['safety'].get('speed_limit_notice'):self.get_logger().warning(c['safety']['speed_limit_notice'])
         lc=c['extrinsics']['lidar'];self.tl,self.ql=extrinsic(lc['xyz_frd_m'],lc['rpy_deg'])
         self.rbl=quaternion_matrix(self.ql)
         self.pub=self.create_publisher(VelocityCommand,self.root+'/control/safe_velocity',qos_profile_sensor_data)
@@ -55,6 +65,7 @@ class SafetyNode(Node):
         self.desired_pub=self.create_publisher(VelocityCommand,self.root+'/control/desired_velocity',qos_profile_sensor_data)
         self.mission_pub=self.create_publisher(String,self.root+'/mission/status',LATCHED)
         self.path_pub=self.create_publisher(Path,self.root+'/navigation/path',qos_profile_sensor_data)
+        self.reference_pub=self.create_publisher(Path,self.root+'/navigation/reference_path',LATCHED)
         self.create_subscription(String,self.root+'/control/flight_status',self.receive_flight,LATCHED)
         self.create_subscription(ReferenceOrigin,'/simulation/reference_origin',self.receive_origin,LATCHED)
         self.create_subscription(Odometry,self.root+'/state/odometry',self.receive_pose,LATEST)
@@ -75,6 +86,8 @@ class SafetyNode(Node):
             self.scan_cache.clear();self.navigation_ready_since=None;self.safety_data={}
             self.planner.reset();self.goal_index=0;self.last_cloud_ns=0
             self.mission=make_mission(self.c['mission']);self.aim=None;self.last_plan=0.
+            self.reference.reset();self.plan_goal=None
+            self.local_goal=None;self.plan_count=0
             self.state_valid=False
             if hasattr(self.navigator,'close'):self.navigator.close()
         self.origin=msg
@@ -119,7 +132,9 @@ class SafetyNode(Node):
         now=self.get_clock().now().nanoseconds
         self.safety_data=dict(pose_age_s=wall-self.pose_wall if self.pose_wall else None,
             lidar_receive_age_s=wall-self.cloud_wall if self.cloud_wall else None,
-            scan_frames=0,scan_span_s=0.)
+            scan_frames=0,scan_span_s=0.,planning_hz=1./self.c['navigation']['replan_period_s'] if self.navigation else 0.,
+            raw_emergency_radius_m=self.planner.radius,fused_avoidance_radius_m=self.c['safety'].get('fused_avoidance_radius_m',4.),
+            achievable_speed_limit_mps=self.planner.speed_limit)
         self.sequence+=1
         command=VelocityCommand(header=header(now),session_id=self.origin.session_id,sequence=self.sequence,
             valid_until=stamp(now+int(self.c['control']['ttl_s']*1e9)),reason='no_fresh_data')
@@ -170,6 +185,9 @@ class SafetyNode(Node):
                 if not scans or span<minimum:
                     raise ValueError('Waiting for complete navigation LiDAR sweep')
                 world=np.concatenate(scans)
+                # Warning nodes retain the full scan. Only the near planning
+                # neighbourhood needs voxel sorting in this control loop.
+                world=local_points(world,p,max(self.planner.radius,self.c['navigation']['planning_radius_m']))
                 # The navigation producer verifies the shared-memory full-scan
                 # flag before publishing. Default minimum_sweep_s=0 consumes a
                 # complete snapshot without waiting for a second pose bracket.
@@ -179,6 +197,9 @@ class SafetyNode(Node):
                 world=world[order[indices]]
                 if len(world)>maximum:raise ValueError('LiDAR protection point budget exceeded')
                 age=max(0.,(now-min(stamps))*1e-9)
+            # Raw scans are an emergency-only layer; unclassified returns at
+            # 2+ metres never enter normal route search or velocity selection.
+            world=emergency_points(world,p,self.planner.radius)
             relative=world-p
             desired=np.zeros(3);distance=0.;phase='waypoint';target=p.copy()
             if self.navigation:
@@ -196,27 +217,60 @@ class SafetyNode(Node):
                     support=world[:,2]<=base[2]+self.c['mission']['landing_surface_tolerance_m']
                     world=world[~support];relative=world-p
                 if phase in ('waypoint','landing_approach','takeoff'):
-                    if self.plan_goal is None or not np.allclose(target,self.plan_goal) or wall-self.last_plan>=self.c['navigation']['replan_period_s']:
-                        if self.plan_goal is None or not np.allclose(target,self.plan_goal):self.planner.preferred_direction=None
-                        self.aim=self.navigator.plan(p,target,world);self.last_plan=wall;self.plan_goal=target.copy()
+                    if self.plan_goal is None or not np.allclose(target,self.plan_goal):
+                        self.planner.preferred_direction=None;self.navigator.path=[];self.local_goal=None;self.aim=None
+                        self.plan_goal=target.copy()
+                    sampled=self.c['mission'].get('mode','waypoints')=='waypoints' and phase=='waypoint'
+                    if wall-self.last_plan>=self.c['navigation']['replan_period_s']:
+                        route_points=local_points(world,p,self.c['navigation']['planning_radius_m'])
+                        if self.dynamic['enabled'] and self.tracks is not None and self.tracks_wall is not None and wall-self.tracks_wall<=self.dynamic['max_age_s']:
+                            predicted,_=from_targets(self.tracks.targets,ns(self.tracks.header.stamp),now,p,self.dynamic)
+                            predicted=near_obstacles(predicted,velocity,self.c['safety'].get('fused_avoidance_radius_m',4.),self.dynamic['horizon_s'])
+                            cloud=fused_route_points(predicted,p,self.dynamic['horizon_s'])
+                            if len(cloud):route_points=np.vstack((route_points,cloud))
+                        self.local_goal=self.reference.reference(p,target,(phase,self.mission.index),route_points) if sampled else target.copy()
+                        self.aim=self.navigator.plan(p,self.local_goal,route_points)
+                        self.plan_count+=1
+                        self.last_plan=wall
                         route=Path(header=header(now))
                         for point in self.navigator.path:
                             pose=PoseStamped(header=header(now));put(pose.pose.position,point);pose.pose.orientation.w=1.;route.poses.append(pose)
                         self.path_pub.publish(route)
-                    if self.aim is None:raise ValueError(self.navigator.reason)
-                    delta=self.aim-p
+                        reference=Path(header=header(now))
+                        for point in self.reference.samples if sampled else [p,target]:
+                            pose=PoseStamped(header=header(now));put(pose.pose.position,point);pose.pose.orientation.w=1.;reference.poses.append(pose)
+                        self.reference_pub.publish(reference)
+                    else:
+                        self.aim=route_aim(p,self.navigator.path,self.c['navigation']['lookahead_m'])
+                    local_goal=self.local_goal if self.local_goal is not None else target
+                    self.safety_data.update(reference_goal_enu_m=local_goal.tolist(),reference_spacing_m=self.reference.spacing,
+                        reference_samples=len(self.reference.samples) if sampled else 0,planning_updates=self.plan_count,
+                        planning_hz=1./self.c['navigation']['replan_period_s'],raw_emergency_radius_m=self.planner.radius,
+                        fused_avoidance_radius_m=self.c['safety'].get('fused_avoidance_radius_m',4.),raw_nearby_returns=len(relative),
+                        ground_endpoint_hold=bool(getattr(self.mission,'ground_hold',False)),
+                        dynamic_horizon_s=self.dynamic['horizon_s'])
+                    if self.aim is None:
+                        if isinstance(self.navigator,AsyncNavigator) and phase=='waypoint' and self.navigator.reason!='goal_obstructed':
+                            # Waiting for an expensive detour is not itself a
+                            # reason to reset the velocity ramp. Use the local
+                            # sample heading as a preference; the unchanged
+                            # all-round braking/dynamic layer chooses the actual
+                            # executable velocity or stops if none is safe.
+                            delta=local_goal-p
+                            self.aim=p+delta*min(1.,self.c['navigation']['lookahead_m']/max(np.linalg.norm(delta),1e-9))
+                            self.safety_data['reference_fallback']='local_velocity_while_planning'
+                        else:raise ValueError(self.navigator.reason)
                     speed_limit=self.mission.speed_limit(p) if hasattr(self.mission,'speed_limit') else self.c['mission']['speed_mps']
-                    unit=delta/max(np.linalg.norm(delta),1e-9)
                     passing=hasattr(self.mission,'pass_through') and self.mission.pass_through()
-                    approach=speed_limit if passing else min(speed_limit,self.c['navigation']['position_gain']*distance,
-                        math.sqrt(2*self.c['safety']['local_velocity']['braking_acceleration_mps2']*max(0.,distance)))
-                    desired=unit*approach
-                    damping=self.c['navigation'].get('velocity_damping',.4)
-                    # Profile speed is a feed-forward reference. Damping only
-                    # lateral motion avoids shrinking its speed by 1/(1+k).
-                    desired-=damping*(velocity-unit*(velocity@unit) if hasattr(self.mission,'speed_limit') else velocity)
-                    length=np.linalg.norm(desired)
-                    desired*=min(1.,speed_limit/max(length,1e-9))
+                    desired=cruise_velocity(p,self.aim,velocity,speed_limit,distance,not passing,
+                        self.c['navigation'],self.c['safety']['local_velocity']['braking_acceleration_mps2'])
+                elif phase=='complete' and flight=='flying':
+                    # Zero velocity alone slowly loses height with the default
+                    # AirSim velocity loop. Keep the completed mission's actual
+                    # endpoint, including an explicitly disabled ground landing.
+                    target=self.mission.points[-1].copy()
+                    if getattr(self.mission,'ground_hold',False):target[2]+=self.c['mission'].get('landing_handoff_m',1.2)
+                    desired=hold_velocity(p,velocity,target,self.c['navigation'])
                 elif phase=='landing':
                     # Only the expected support surface at the configured
                     # touchdown height may be excluded during final landing.
@@ -248,20 +302,19 @@ class SafetyNode(Node):
             fused_count=len(obstacles)
             lidar_fresh=bool(self.lidar_tracks and self.lidar_tracks_wall is not None
                 and wall-self.lidar_tracks_wall<=self.dynamic['max_age_s'])
-            if self.dynamic['enabled'] and lidar_fresh:
-                # Unclassified fragments need measured motion confirmation.
-                # Static and tentative returns are already protected by the
-                # unfiltered all-round raw cloud used above.
-                moving=[t for t in self.lidar_tracks.targets if t.state=='confirmed']
-                extra,bad=from_targets(moving,ns(self.lidar_tracks.header.stamp),now,p,self.dynamic)
-                rejected+=bad
-                # A semantic observation wins duplicate association. Unknown
-                # side/rear returns remain safety obstacles, never class 6.
-                obstacles.extend(o for o in extra if not any(np.linalg.norm(o.position-f.position)<1.5 for f in obstacles[:fused_count]))
+            # LiDAR-only tracks remain available for diagnostics. Only fused
+            # targets influence normal avoidance; raw returns protect 2 m.
             if len(obstacles)>self.dynamic['max_targets']:raise ValueError('Combined dynamic obstacle budget exceeded')
+            before=len(obstacles)
+            obstacles=near_obstacles(obstacles,velocity,self.c['safety'].get('fused_avoidance_radius_m',4.),self.dynamic['horizon_s'])
+            self.safety_data.update(dynamic_targets_total=before,dynamic_targets_local=len(obstacles))
+            fused_count=len(obstacles)
             decision=self.planner.command(relative,desired,velocity,dt,age,distance,obstacles,self.dynamic,
-                minimum_vertical_velocity_mps=0. if self.navigation and phase=='takeoff' else None)
+                minimum_vertical_velocity_mps=descent_limit(p,target,self.reference.anchor,phase,
+                    self.c['mission'].get('landing_ground_z_m',0.),self.planner.clearance,self.planner.braking) if self.navigation else None)
             safe=decision.velocity_enu_mps.copy();reason='avoidance' if decision.avoidance_active else 'clear'
+            self.safety_data['raw_emergency_active']=bool(len(relative))
+            self.safety_data['local_velocity_avoidance']=bool(decision.avoidance_active)
             # Enforce the measured lidar angular coverage after candidate
             # smoothing. Unknown side/rear/up/down directions are not free.
             local=safe@r@self.rbl
@@ -302,7 +355,9 @@ class SafetyNode(Node):
                 # avoidance while still airborne. Never release this exception
                 # during arming, landing, failed/stale flight status or on ground.
                 airborne_hover=(phase=='complete' and self.flight_phase=='flying' and wall-self.flight_wall<1.)
-                if not (airborne_hover and risk.warning and not decision.emergency_stop):
+                if airborne_hover and np.linalg.norm(desired)>.005 and not decision.emergency_stop:
+                    if not risk.warning and not decision.avoidance_active:reason='mission_hold'
+                elif not (airborne_hover and (risk.warning or decision.avoidance_active) and not decision.emergency_stop):
                     safe[:]=0.;reason='mission_'+phase;self.planner.reset()
             put(command.velocity,safe);command.reason=reason;risk.reason=reason;self.health.ok()
         except Exception as exc:

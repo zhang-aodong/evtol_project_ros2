@@ -125,20 +125,29 @@ def artifacts(draft,root):
     from evtol_safety.velocity import LocalVelocityAvoidance
     envelope=LocalVelocityAvoidance(local,base['safety']['cloud_timeout_s'],base['control']['duration_s'],0.).speed_limit
     requested=max([d['mission']['speed_mps']] if compiled is None else [p['speed_mps'] for p in compiled['points']])
-    if requested>envelope+.001:raise ValueError(f'Requested {requested:g} m/s exceeds the current sensor/braking envelope {envelope:.2f} m/s')
+    if requested>envelope+.001:
+        if local['detection_radius_m']<=2. and requested<=2.:
+            # A short raw emergency range cannot safely sustain the old
+            # 2 m/s speed with the measured controller/braking response.
+            # Preserve the user's draft; expose the actual enforced cap.
+            base['safety']['speed_limit_notice']=f'2 m raw emergency protection limits cruise to {envelope:.2f} m/s (requested {requested:g})'
+        else:raise ValueError(f'Requested {requested:g} m/s exceeds the current sensor/braking envelope {envelope:.2f} m/s')
     base['experiment']=copy.deepcopy(d['experiment'])
+    base['warnings']=copy.deepcopy(d['warnings'])
     base['evaluation']['truth_hz']=d['experiment']['truth_hz']
     base['model']['imgsz']=d['sensors']['imgsz']
     base['safety']['dynamic']=copy.deepcopy(d['dynamic'])
     base['navigation']['async_planning']=True
     base['ue_detection_boxes']['max_boxes']=max(16,d['actors']['count'])
-    for capture in vehicles[ego]['Cameras']['front_camera']['CaptureSettings']:
-        if capture['ImageType'] in (0,5):capture['FOV_Degrees']=d['sensors']['horizontal_fov_deg']
     if base.get('surround',{}).get('enabled',False):
         from evtol_targeting.surround_geometry import camera_settings, lidar_settings
+        base['surround'].update({k:d['sensors'][k] for k in ('width','height','imgsz','horizontal_fov_deg','max_hz')})
+        vehicles[ego]['Cameras']={}
         for view in base['surround']['cameras']:
             vehicles[ego]['Cameras'][view['name']]=camera_settings(base['surround'],view)
         lc=base['surround']['lidar']
         vehicles[ego]['Sensors'][lc['name']]=lidar_settings(lc)
+        for sensor in vehicles[ego]['Sensors'].values():
+            if sensor.get('SensorType')==6:sensor.update(HorizontalFOVStart=-180,HorizontalFOVEnd=179.999)
     validate_config(base)
     return d,base,scenario,ue,compiled

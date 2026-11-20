@@ -49,7 +49,7 @@ class SurroundNodeContract(unittest.TestCase):
         self.assertEqual(np.count_nonzero(small),2)
 
     def test_prefetch_only_requests_real_rays_and_cannot_publish_a_detection(self):
-        c=yaml.safe_load((ROOT/'config/targeting.yaml').read_text(encoding='utf8'));c['_root']=ROOT
+        c=yaml.safe_load((ROOT/'tests/fixtures/legacy_targeting.yaml').read_text(encoding='utf8'));c['_root']=ROOT
         c['surround']['roi_prefetch']=True
         node=SurroundFusion(c)
         try:
@@ -70,7 +70,7 @@ class SurroundNodeContract(unittest.TestCase):
         finally:node.destroy_node()
 
     def test_lossless_labels_plus_real_depth_geometry_create_a_measurement(self):
-        c=yaml.safe_load((ROOT/'config/targeting.yaml').read_text(encoding='utf8'));c['_root']=ROOT;c['surround']['roi_lidar']=True
+        c=yaml.safe_load((ROOT/'tests/fixtures/legacy_targeting.yaml').read_text(encoding='utf8'));c['_root']=ROOT;c['surround']['roi_lidar']=True
         node=SurroundFusion(c)
         try:
             node.receive_origin(ReferenceOrigin(session_id='surround-contract'))

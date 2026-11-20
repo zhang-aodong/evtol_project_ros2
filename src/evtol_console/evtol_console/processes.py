@@ -48,7 +48,7 @@ def node_specs(c,config,simconfig,run):
         for k in ('truth','camera','lidar','imu','gnss','radio')]
     algorithms=[('state','evtol_targeting.state_node',[]),('trajectory','evtol_targeting.trajectory_node',[]),
         ('vision','evtol_targeting.vision_node',[]),('localizer','evtol_targeting.localizer_node',[]),
-        ('safety','evtol_safety.node',[]),('gateway','evtol_safety.gateway',['--execute'] if run['execute'] else [])]
+        ('safety','evtol_safety.node',[]),('warnings','evtol_safety.warning_node',[]),('gateway','evtol_safety.gateway',['--execute'] if run['execute'] else [])]
     if c.get('surround',{}).get('enabled',False):
         detect=c['model'].get('task')=='detect'
         if detect or not c['surround'].get('front_diagnostic_inference',False):algorithms=[s for s in algorithms if s[0]!='vision']

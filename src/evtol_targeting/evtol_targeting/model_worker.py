@@ -38,9 +38,13 @@ def main():
     p.add_argument('--task',choices=['detect','semantic'],default='semantic')
     p.add_argument('--confidence',type=float,default=.25);p.add_argument('--iou',type=float,default=.5)
     p.add_argument('--max-det',type=int,default=128)
+    p.add_argument('--backend',choices=['torch','onnx'],default='torch')
+    p.add_argument('--require-gpu',action='store_true')
     p.add_argument('--parent-pid',type=int,default=0);opts=p.parse_args()
     watch_parent(opts.parent_pid)
     sys.path.insert(0,opts.vendor)
+    if opts.backend=='onnx':
+        return onnx_loop(opts)
     with contextlib.redirect_stdout(sys.stderr):
         import numpy as np
         import cv2
@@ -93,6 +97,32 @@ def main():
             print(json.dumps(dict(sequence=request['sequence'],ms=(time.perf_counter()-begun)*1000)),flush=True)
         except Exception as exc:print(json.dumps(dict(sequence=request.get('sequence'),error=str(exc))),flush=True)
         finally:
+            if mapping is not None:mapping.close()
+
+
+def onnx_loop(opts):
+    import numpy as np
+    from onnx_detector import OnnxDetector
+    if opts.task!='detect':raise ValueError('ONNX worker supports detection only')
+    with contextlib.redirect_stdout(sys.stderr):
+        detector=OnnxDetector(opts.weights,opts.imgsz,opts.tile_rows*opts.tile_cols,opts.device,opts.require_gpu)
+    print(json.dumps(dict(ready=True,task='detect',backend='onnx',names=detector.names,device=opts.device,
+        providers=detector.providers,precision=str(detector.dtype),
+        sha256=hashlib.sha256(Path(opts.weights).read_bytes()).hexdigest())),flush=True)
+    for line in sys.stdin:
+        mapping=None;image=None;request={}
+        try:
+            request=json.loads(line);h,w=request['height'],request['width']
+            if h%opts.tile_rows or w%opts.tile_cols:raise ValueError('Incomplete camera mosaic')
+            mapping=shared_memory.SharedMemory(name=request['shm'])
+            image=np.ndarray((h,w,3),np.uint8,buffer=mapping.buf)
+            th,tw=h//opts.tile_rows,w//opts.tile_cols
+            images=[image[y*th:(y+1)*th,x*tw:(x+1)*tw] for y in range(opts.tile_rows) for x in range(opts.tile_cols)]
+            detections,timing=detector.predict(images,opts.confidence,opts.max_det)
+            print(json.dumps(dict(sequence=request['sequence'],detections=detections,ms=timing['inference_ms'],**timing)),flush=True)
+        except Exception as exc:print(json.dumps(dict(sequence=request.get('sequence'),error=str(exc))),flush=True)
+        finally:
+            image=None;images=None
             if mapping is not None:mapping.close()
 
 

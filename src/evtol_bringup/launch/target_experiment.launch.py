@@ -24,6 +24,8 @@ def sensor_config(root, targeting_path):
         simulation['camera']['surround_cameras'] = [v['name'] for v in surround['cameras']]
         simulation['camera']['surround_record_truth'] = bool(surround.get('record_truth', False))
     parent = root / 'data/launch_runs'
+    from evtol_simulation.targeting_config import configure
+    configure(simulation,settings)
     parent.mkdir(parents=True, exist_ok=True)
     folder = Path(tempfile.mkdtemp(prefix='experiment_', dir=str(parent)))
     path = folder / 'simulation.yaml'

@@ -63,7 +63,10 @@ def localize_boxes(world,projection,boxes,options,motion_pixels=None,ground_z=No
         raise ValueError('Invalid per-ray motion margin')
     finite=np.isfinite(world[ids]).all(axis=1)&np.isfinite(depths)&(depths>0)
     # Points behind the first surface in the same camera pixel are occluded.
-    _,inverse=np.unique(uv,axis=0,return_inverse=True)
+    # Projection pixels are integral and nonnegative. A scalar key preserves
+    # identical-pixel occlusion while avoiding the costly Nx2 row sort.
+    stride=int(uv[:,0].max())+1
+    _,inverse=np.unique(uv[:,1].astype(np.int64)*stride+uv[:,0],return_inverse=True)
     nearest=np.full(inverse.max()+1,np.inf);np.minimum.at(nearest,inverse,depths)
     finite &= depths<=nearest[inverse]+options['cluster_radius_m']
     costs=np.full((len(ids),len(boxes)),np.inf)

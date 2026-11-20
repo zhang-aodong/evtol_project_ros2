@@ -289,13 +289,16 @@ class Engine:
             if not probe.call('ping'):raise ValueError('Start UE first')
             actual=json.loads(probe.call('getSettingsString'))
             if self.ue_fingerprint and self.ue_fingerprint!=self.fingerprint(settings):raise ValueError('UE settings changed; restart UE before ROS')
-            camera=actual['Vehicles'][c['airsim']['vehicle']]['Cameras']['front_camera']
-            expected_camera=settings['Vehicles'][c['airsim']['vehicle']]['Cameras']['front_camera']
-            for capture in expected_camera['CaptureSettings']:
-                if capture['ImageType'] not in (0,5):continue
-                match=next((x for x in camera['CaptureSettings'] if x['ImageType']==capture['ImageType']),None)
-                if not match or any(abs(float(match[k])-float(capture[k]))>.01 for k in ('Width','Height','FOV_Degrees')):
-                    raise ValueError('UE camera geometry differs from experiment; restart UE with the saved configuration')
+            for name,expected_camera in settings['Vehicles'][c['airsim']['vehicle']]['Cameras'].items():
+                camera=actual['Vehicles'][c['airsim']['vehicle']]['Cameras'].get(name,{})
+                for field in ('X','Y','Z','Roll','Pitch','Yaw'):
+                    if abs(float(camera.get(field,0.))-float(expected_camera.get(field,0.)))>.01:
+                        raise ValueError('UE camera extrinsics differ: '+name+'; restart UE')
+                for capture in expected_camera['CaptureSettings']:
+                    if capture['ImageType'] not in (0,5):continue
+                    match=next((x for x in camera.get('CaptureSettings',[]) if x['ImageType']==capture['ImageType']),None)
+                    if not match or any(abs(float(match[k])-float(capture[k]))>.01 for k in ('Width','Height','FOV_Degrees')):
+                        raise ValueError('UE camera geometry differs: '+name+'; restart UE with saved settings')
             missing=set(settings['Vehicles'])-set(actual['Vehicles'])
             if missing:raise ValueError('UE is missing configured vehicles: '+', '.join(sorted(missing)))
             extra=set(actual['Vehicles'])-set(settings['Vehicles'])
@@ -330,6 +333,8 @@ class Engine:
             simconfig['camera']['surround_cameras']=[v['name'] for v in c['surround']['cameras']]
             simconfig['camera']['surround_record_truth']=bool(c['surround'].get('record_truth',False))
         sim=folder/'simulation.yaml'
+        from evtol_simulation.targeting_config import configure
+        configure(simconfig,c)
         sim.write_text(yaml.safe_dump(simconfig,allow_unicode=True,sort_keys=False),encoding='utf8')
         atomic(folder/'airsim.json',settings)
         c_snapshot=folder/'targeting.yaml'

@@ -16,7 +16,7 @@ def processes(context):
     evaluate=LaunchConfiguration('evaluate').perform(context).lower()=='true'
     specs=[('state','evtol_targeting.state_node',[]),('trajectory','evtol_targeting.trajectory_node',[]),
         ('vision','evtol_targeting.vision_node',[]),
-        ('localizer','evtol_targeting.localizer_node',[]),('safety','evtol_safety.node',[]),
+        ('localizer','evtol_targeting.localizer_node',[]),('safety','evtol_safety.node',[]),('warnings','evtol_safety.warning_node',[]),
         ('gateway','evtol_safety.gateway',['--execute'] if execute else [])]
     import yaml
     settings=yaml.safe_load(Path(config).read_text(encoding='utf-8-sig'))

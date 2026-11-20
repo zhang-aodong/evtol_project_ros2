@@ -52,7 +52,7 @@ class DynamicContracts(unittest.TestCase):
         p.requests=queue.Queue(maxsize=1);p.results=queue.Queue(maxsize=1)
         p.version=1;p.goal=np.array([0.,0.,1.5]);p.busy=True
         p.results.put((1,p.goal,[],'goal_obstructed',time.monotonic()))
-        self.assertIsNone(p.plan(np.zeros(3),p.goal,np.empty((0,3))))
+        self.assertIsNone(p.plan(np.zeros(3),p.goal,np.asarray([p.goal])))
         self.assertEqual(p.reason,'goal_obstructed')
 
     def test_crossing_future_obstacle_rejects_forward_and_accepts_detour(self):
@@ -122,13 +122,13 @@ class AuditContracts(unittest.TestCase):
 
 class ConfigRoundtrip(unittest.TestCase):
     def test_v1_migration_and_full_configuration_roundtrip(self):
-        d=defaults(ROOT);self.assertEqual(d['version'],2)
+        d=defaults(ROOT);self.assertEqual(d['version'],5)
         restored=artifacts(json.loads(json.dumps(d)),ROOT)[0];self.assertEqual(d,restored)
         old=copy.deepcopy(d);old['version']=1
         for k in ('experiment','dynamic','sensors','ui'):old.pop(k)
-        self.assertEqual(upgrade(old)['version'],2)
+        self.assertEqual(upgrade(old)['version'],5)
         _,c,scenario,ue,_=artifacts(d,ROOT)
-        self.assertEqual(c['model']['imgsz'],960);self.assertEqual(ue['Vehicles']['Drone1']['Cameras']['front_camera']['CaptureSettings'][0]['FOV_Degrees'],70)
+        self.assertEqual(c['model']['imgsz'],1536);self.assertEqual(ue['Vehicles']['Drone1']['Cameras']['front_left']['CaptureSettings'][0]['FOV_Degrees'],70)
     def test_32_and_64_aircraft_files_roundtrip_without_ego_sensor_duplication(self):
         import sys
         sys.path.insert(0,str(ROOT/'scripts'))
@@ -155,7 +155,7 @@ class ConfigRoundtrip(unittest.TestCase):
                 target=root/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(ROOT/name,target)
             engine=Engine(root)
             try:
-                old=copy.deepcopy(engine.config);d=copy.deepcopy(old);d['experiment']['radius_m']=15
+                old=copy.deepcopy(engine.config);d=copy.deepcopy(old);d['experiment']['radius_m']=15;d['warnings']['fusion_radius_m']=15
                 result=engine.request(dict(action='import_config',payload=d));self.assertTrue(result['ok'],result)
                 self.assertEqual(engine.config,old);self.assertFalse(engine.processes)
                 self.assertFalse((root/'config/console.local.json').exists())

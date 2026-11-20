@@ -85,8 +85,8 @@
           "UpdateFrequency": 20,
           "UseWallClockFrequency": true,
           "CompleteScanPerUpdate": true,
-          "HorizontalFOVStart": -90,
-          "HorizontalFOVEnd": 90,
+          "HorizontalFOVStart": -180,
+          "HorizontalFOVEnd": 179.999,
           "VerticalFOVUpper": 15,
           "VerticalFOVLower": -15,
           "Range": 100,
@@ -104,39 +104,59 @@
           "Yaw": 0,
           "NumberOfChannels": 128,
           "PointsPerSecond": 230400,
-          "RotationsPerSecond": 20,
-          "UpdateFrequency": 20,
+          "RotationsPerSecond": 20.0,
+          "UpdateFrequency": 20.0,
           "UseWallClockFrequency": true,
           "CompleteScanPerUpdate": true,
+          "AngularDither": true,
           "HorizontalFOVStart": -180,
           "HorizontalFOVEnd": 179.999,
-          "VerticalFOVUpper": 90,
-          "VerticalFOVLower": -90,
-          "Range": 30,
+          "VerticalFOVUpper": 90.0,
+          "VerticalFOVLower": -90.0,
+          "Range": 100.0,
           "DataFrame": "SensorLocalFrame",
           "DrawDebugPoints": false
         }
       },
       "Cameras": {
-        "front_camera": {
-          "X": 0.3,
-          "Y": 0,
-          "Z": 0,
+        "front_left": {
+          "X": 0.0,
+          "Y": 0.0,
+          "Z": 0.0,
           "Roll": 0,
-          "Pitch": -10,
-          "Yaw": 0,
+          "Pitch": 0,
+          "Yaw": -15.0,
           "CaptureSettings": [
             {
               "ImageType": 0,
-              "Width": 2048,
+              "Width": 1536,
               "Height": 1536,
-              "FOV_Degrees": 35
+              "FOV_Degrees": 70.0,
+              "MotionBlurAmount": 0
             },
             {
               "ImageType": 5,
-              "Width": 2048,
+              "Width": 1536,
               "Height": 1536,
-              "FOV_Degrees": 35
+              "FOV_Degrees": 70.0,
+              "MotionBlurAmount": 0
+            }
+          ]
+        },
+        "front_right": {
+          "X": 0.0,
+          "Y": 0.0,
+          "Z": 0.0,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 15.0,
+          "CaptureSettings": [
+            {
+              "ImageType": 0,
+              "Width": 1536,
+              "Height": 1536,
+              "FOV_Degrees": 70.0,
+              "MotionBlurAmount": 0
             }
           ]
         }

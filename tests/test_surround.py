@@ -14,7 +14,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 class CubeCoverage(unittest.TestCase):
     def setUp(self):
-        self.c=yaml.safe_load((ROOT/'config/targeting.yaml').read_text(encoding='utf8'));self.s=self.c['surround']
+        self.c=yaml.safe_load((ROOT/'tests/fixtures/legacy_targeting.yaml').read_text(encoding='utf8'));self.s=self.c['surround']
 
     def test_six_views_cover_every_direction(self):
         rng=np.random.default_rng(17);points=rng.normal(size=(20000,3));points*=10/np.linalg.norm(points,axis=1)[:,None]

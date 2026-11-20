@@ -39,12 +39,13 @@ class Bridge(Node):
                 'perception/lidar/points',
                 'perception/targets_measurements','perception/tracks','perception/markers',
                 'perception/lidar_obstacles','perception/lidar_obstacle_markers',
-                'safety/risk','safety/risks','control/desired_velocity','control/safe_velocity',
-                'navigation/lidar/points','navigation/path','navigation/waypoint_path','navigation/traveled_path',
+                'safety/risk','safety/risks','warning/lidar','warning/fusion','control/desired_velocity','control/safe_velocity',
+                'navigation/lidar/points','navigation/path','navigation/waypoint_path','navigation/traveled_path','navigation/reference_path',
                 'mission/status','control/flight_status')}
         self.allowed.update(root+'/perception/roi_lidar/surround_'+view+'/points'
             for view in ('front','right','back','left','up','down'))
-        self.path_topics={root+'/navigation/waypoint_path',root+'/navigation/traveled_path'}
+        self.allowed.update(root+'/perception/roi_lidar/'+view+'/points' for view in ('front_left','front_right'))
+        self.path_topics={root+'/navigation/waypoint_path',root+'/navigation/traveled_path',root+'/navigation/reference_path'}
         self.path_data={}
         self.allowed.update({'/simulation/reference_origin','/simulation/truth/targets','/simulation/truth/status',
             '/evaluation/detection_metrics','/evaluation/target_matches','/evaluation/encounter_events','/evaluation/warning_metrics','/evaluation/markers'})

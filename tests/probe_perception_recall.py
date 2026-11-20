@@ -21,6 +21,7 @@ def main():
     p.add_argument('--collect-directory',type=Path);p.add_argument('--route-alt',action='store_true');p.add_argument('--radial',action='store_true')
     p.add_argument('--radial-holdout',action='store_true')
     p.add_argument('--radial-verification',action='store_true')
+    p.add_argument('--dual-front',action='store_true',help='32 aircraft, two altitude layers, 10 m forward hemisphere warning audit')
     a=p.parse_args();root=a.root.resolve();cfg=root/'config/console.local.json';original_hash=hashlib.sha256(cfg.read_bytes()).hexdigest()
     origin=root/'data/session_origin.json';original_origin=origin.read_bytes() if origin.exists() else None
     out=root/'reports'/('perception_'+a.label);out.mkdir(exist_ok=True)
@@ -35,7 +36,7 @@ def main():
     os.environ['ROS_DOMAIN_ID']='223'
     rclpy.init(domain_id=223);engine=Engine(root,ros_stop=ros_stop)
     if a.route_alt:engine.config['mission']['waypoints_enu_m']=[[0,0,8],[0,55,8],[15,65,15],[0,35,12]]
-    if a.radial or a.radial_holdout or a.radial_verification:
+    if a.radial or a.radial_holdout or a.radial_verification or a.dual_front:
         import math
         holdout=a.radial_holdout;outer,inner=(28.,9.) if holdout else (26.,8.)
         if a.radial_verification:outer,inner=30.,10.
@@ -48,16 +49,24 @@ def main():
             if a.radial_verification:
                 angle=2*math.pi*i/32+math.radians(19);east,north=math.sin(angle),math.cos(angle)
                 height=9.+3*(i%4);speed=1.8+.07*(i%8)
+            if a.dual_front:
+                outer,inner=20.,7.
+                angle=2*math.pi*(i%16)/16+math.radians(11)
+                east,north=math.sin(angle),math.cos(angle);height=8. if i<16 else 12.;speed=1.5+.05*(i%4)
             agents.append(dict(name='Drone'+str(i+2),speed_mps=speed,spawn_ned_m=[outer*north,outer*east,0.],
                 waypoints_enu_m=[[outer*east,outer*north,height],[inner*east,inner*north,height]],repeat=0))
         engine.config['actors'].update(count=32,agents=agents,initialization='first_waypoint')
+        if a.dual_front:
+            engine.config['mission'].update(waypoints_enu_m=[[0,0,10]],land_at_last=False)
+            engine.config['experiment'].update(region='front_hemisphere',radius_m=10.)
+            engine.config['warnings']['fusion_radius_m']=10.
     engine.config['ue']['visible']=a.visible;engine.config['run'].update(execute=True,actors=True,evaluate=True,new_session=True)
     done=threading.Event();bridge=ConsoleBridge(engine,'drone1',0);executor=SingleThreadedExecutor();executor.add_node(bridge)
     lastsave={};samples=[];error=None;collector=None;collect_stop=threading.Event()
     def image(kind,m):
         if time.monotonic()-lastsave.get(kind,0)<10:return
         lastsave[kind]=time.monotonic();(out/(kind+'_'+str(m.header.stamp.sec)+'.jpg')).write_bytes(bytes(m.data))
-    for kind,topic in [('rgb','rgb/compressed'),('semantic','semantic_preview/compressed')]:
+    for kind,topic in [('rgb','rgb/compressed'),('detections','detections_preview/compressed')]:
         bridge.create_subscription(CompressedImage,'/drone1/perception/surround/'+topic,lambda m,k=kind:image(k,m),LATEST)
     def spin():
         while not done.is_set():executor.spin_once(timeout_sec=.01)
@@ -161,6 +170,13 @@ def main():
                     encounters=enc,completed_encounters=completed,scoring_valid_fraction=coverage,last_scoring_stamp_s=last_scoring.get('stamp_s'),
                     primary_metric='Detected within 0.5 s of each entry into the complete 20 m sphere',
                     meets_95=completed>=20 and timely is not None and timely>=.95 and coverage>=.95 and airborne>=.8 and len(flown)>=5 and error is None)
+                if a.dual_front:
+                    warning=last.get('hemisphere_warning') or summary.get('hemisphere_warning') or {}
+                    events=warning.get('encounters',{});count=sum(events.get(k,0) for k in ('success','late','missed'))
+                    timely=warning.get('timely_success_rate')
+                    report.update(hemisphere_warning=warning,primary_metric='Actual warning within 0.5 s of each entry into 10 m forward hemisphere',
+                        timely_warning_success_rate=timely,warning_encounters=count,
+                        meets_90=count>=20 and timely is not None and timely>=.9 and coverage>=.95 and airborne>=.8 and error is None)
         (out/'result.json').write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf8')
         (out/'telemetry.json').write_text(json.dumps(samples,ensure_ascii=False),encoding='utf8')
         print(json.dumps(report,ensure_ascii=False),flush=True)

@@ -4,7 +4,7 @@ from bisect import bisect_left
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-DEFAULTS=dict(radius_m=20.,association_gate_m=3.,evidence_s=.3,window_s=10.,
+DEFAULTS=dict(radius_m=10.,region='front_hemisphere',association_gate_m=3.,evidence_s=.3,window_s=10.,
               timely_s=.5,exit_margin_m=2.,exit_hold_s=1.,buffer_s=.4,
               truth_max_gap_s=.15,truth_hz=20.,publish_hz=5.,class_ids=[6],
               target_size_m=[1.,1.,.5],ego_radius_m=.5,risk_clearance_m=2.,risk_horizon_s=3.,score_only_flying=True,warning_events=[])
@@ -32,13 +32,18 @@ class RangeAudit:
         self.observations=deque(maxlen=500);self.window=deque();self.last_t=None
         self.active={};self.events=[];self.totals=dict(tp=0,truth=0,fp=0,valid=0,invalid=0)
         self.completed=dict(success=0,late=0,missed=0,censored=0)
-        self.camera=None;self.session='';self.min_distance=None
+        self.camera=None;self.session='';self.min_distance=None;self.forward=deque(maxlen=400)
 
     def add_truth(self,identity,t,position,velocity=(0.,0.,0.)):
         self._add(self.truth[identity],t,position,velocity)
 
-    def add_ego(self,t,position,velocity=(0.,0.,0.)):
+    def add_ego(self,t,position,velocity=(0.,0.,0.),forward=(1.,0.,0.)):
         self._add(self.ego,t,position,velocity)
+        self._add(self.forward,t,forward,(0.,0.,0.))
+
+    def contains(self,relative,forward,radius=None):
+        r=self.o['radius_m'] if radius is None else radius
+        return bool(np.linalg.norm(relative)<=r and (self.o['region']=='sphere' or relative@forward>=-1e-9))
 
     @staticmethod
     def _add(history,t,p,v):
@@ -88,7 +93,13 @@ class RangeAudit:
                 expected=len(self.expected),known=len(self.expected)-len(missing),missing=missing,ego_valid=ego is not None,
                 radius_m=self.o['radius_m'],totals=dict(self.totals),recall=None,targets=[],scoring=score)
         position,velocity=ego
-        inside={i:s for i,s in states.items() if np.linalg.norm(s[0]-position)<=self.o['radius_m']}
+        direction=self.at(self.forward,t)
+        if direction is None or np.linalg.norm(direction[0])<1e-9:
+            if score:self.totals['invalid']+=1
+            return dict(schema_version=1,session_id=self.session,stamp_s=t,valid=False,reason='orientation_incomplete',
+                totals=dict(self.totals),targets=[],scoring=score)
+        forward=direction[0]/max(np.linalg.norm(direction[0]),1e-12)
+        inside={i:s for i,s in states.items() if self.contains(s[0]-position,forward)}
         observations=[r for r in self.observations if 0<=t-r['stamp_s']<=self.o['evidence_s'] and not r['late']]
         # A track that changes association cannot cover both its old and new
         # identities during the evidence hold window.
@@ -102,7 +113,7 @@ class RangeAudit:
         matched=set(inside)&set(evidence);fp=0
         # A held false detection counts once per track, not once per publish.
         false_tracks={key:item for key,(identity,row,item) in latest_tracks.items() if identity is None}
-        for d in false_tracks.values():fp+=np.linalg.norm(np.asarray(d['position'])-position)<=self.o['radius_m']
+        for d in false_tracks.values():fp+=self.contains(np.asarray(d['position'])-position,forward)
         targets=[]
         for identity,state in states.items():
             distance=float(np.linalg.norm(state[0]-position));seen=identity in matched
@@ -122,7 +133,8 @@ class RangeAudit:
                     self._event(identity,event['result'],t,delay_s=delay,entered_s=event['entered'])
                 if event['result']=='pending' and t-event['entered']>=self.o['timely_s']:
                     event['result']='missed';self.completed['missed']+=1;self._event(identity,'missed',t)
-                if distance>self.o['radius_m']+self.o['exit_margin_m']:
+                exited=distance>self.o['radius_m']+self.o['exit_margin_m'] or (self.o['region']=='front_hemisphere' and (state[0]-position)@forward < -self.o['exit_margin_m'])
+                if exited:
                     if event['outside_since'] is None:event['outside_since']=t
                     if t-event['outside_since']>=self.o['exit_hold_s']:
                         if event['result']=='pending':self.completed['missed']+=1
@@ -145,7 +157,7 @@ class RangeAudit:
             nearest=min(float(np.linalg.norm(s[0]-position)) for s in states.values())
             self.min_distance=nearest if self.min_distance is None else min(nearest,self.min_distance)
         done=sum(self.completed[k] for k in ('success','late','missed'))
-        return dict(schema_version=1,session_id=self.session,stamp_s=t,valid=True,reason='ok',radius_m=self.o['radius_m'],
+        return dict(schema_version=1,session_id=self.session,stamp_s=t,valid=True,reason='ok',radius_m=self.o['radius_m'],region=self.o['region'],forward_enu=forward.tolist(),
             expected=len(self.expected),known=len(states),truth_count=n,detected_count=tp,missed_count=n-tp,false_positive_count=fp,scoring=score,
             recall=tp/n if n else None,precision=tp/(tp+fp) if tp+fp else None,
             window_recall=wtp/wn if wn else None,cumulative_recall=self.totals['tp']/self.totals['truth'] if self.totals['truth'] else None,

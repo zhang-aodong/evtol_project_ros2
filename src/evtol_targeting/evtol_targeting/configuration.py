@@ -4,7 +4,14 @@ import numpy as np
 
 
 def validate_config(c):
+    if 'warnings' in c:
+        from evtol_safety.warnings import validate_options
+        validate_options(c['warnings'])
     model=c['model']
+    if model.get('backend','torch') not in ('torch','onnx'):raise ValueError('Invalid model.backend')
+    if model.get('backend')=='onnx' and (model.get('task')!='detect' or not str(model['weights']).endswith('.onnx')):
+        raise ValueError('ONNX backend requires a detection .onnx model')
+    if type(model.get('require_gpu',False)) is not bool:raise ValueError('Invalid model.require_gpu')
     if model.get('task','semantic') not in ('semantic','detect'):raise ValueError('Invalid model.task')
     if model.get('task')=='detect':
         if not c.get('surround',{}).get('enabled',False):raise ValueError('Detection mode requires the surround camera stack')
@@ -22,12 +29,14 @@ def validate_config(c):
         if type(padding) is not int or not 0<=padding<=16:raise ValueError('Invalid detection.box_roi_padding_px')
     s=c.get('surround',{})
     if s.get('enabled',False):
-        if len(s['cameras'])!=6 or len(set(v['name'] for v in s['cameras']))!=6:
-            raise ValueError('Surround requires six uniquely named cube views')
+        if len(s['cameras']) not in (2,6) or len(set(v['name'] for v in s['cameras']))!=len(s['cameras']):
+            raise ValueError('Perception requires two or six uniquely named views')
+        if model.get('backend')=='onnx' and len(s['cameras'])!=2:raise ValueError('Current ONNX export requires two cameras')
         for k in ('width','height','imgsz'):
             if type(s[k]) is not int or s[k]<128 or s[k]>2048:raise ValueError('Invalid surround.'+k)
-        if s['width']!=s['height'] or not 90<s['horizontal_fov_deg']<=120:
-            raise ValueError('Cube views require square images and overlapping FOV')
+        minimum=90 if len(s['cameras'])==6 else 20
+        if s['width']!=s['height'] or not minimum<s['horizontal_fov_deg']<=120:
+            raise ValueError('Invalid square-camera rig FOV (six cube views require >90 degrees)')
         if not 1<=s['max_hz']<=20 or not .1<=s['max_age_s']<=.4:
             raise ValueError('Invalid surround timing budget')
         for k in ('min_mask_pixels','min_lidar_points','merge_distance_m'):
@@ -75,6 +84,9 @@ def validate_config(c):
                 if key=='warning_events':
                     from .warning_audit import validate_events
                     validate_events(value);continue
+                if key=='region':
+                    if value not in ('sphere','front_hemisphere'):raise ValueError('Invalid experiment.region')
+                    continue
                 if isinstance(defaults[key],bool):
                     if type(value) is not bool:raise ValueError('Invalid '+key)
                 elif isinstance(defaults[key],list):
@@ -107,6 +119,9 @@ def validate_config(c):
             value=c[section][name]
             if not isinstance(value,(int,float)) or not math.isfinite(value) or value<=0:
                 raise ValueError(f'{section}.{name} must be finite and positive')
+    fused_radius=c['safety'].get('fused_avoidance_radius_m',4.)
+    if isinstance(fused_radius,bool) or not isinstance(fused_radius,(int,float)) or not math.isfinite(fused_radius) or not 2<=fused_radius<=20:
+        raise ValueError('safety.fused_avoidance_radius_m must be 2..20 m')
     for name,value in c['safety']['local_velocity'].items():
         if not isinstance(value,(int,float)) or not math.isfinite(value) or value<=0:
             raise ValueError('Invalid safety.local_velocity.'+name)
@@ -168,6 +183,15 @@ def validate_config(c):
             raise ValueError('Takeoff height must leave ground clearance')
         if not math.isfinite(c['navigation'].get('velocity_damping',.4)) or c['navigation'].get('velocity_damping',.4)<0:
             raise ValueError('Invalid navigation.velocity_damping')
+        nav=c['navigation']
+        for key,default,lo,hi in [('sample_spacing_m',2.,.25,10.),('tracking_lookahead_m',4.,1.,20.)]:
+            value=nav.get(key,default)
+            if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value) or not lo<=value<=hi:
+                raise ValueError('Invalid navigation.'+key)
+        if nav.get('tracking_lookahead_m',4.)>=nav['planning_radius_m']-1.:
+            raise ValueError('Tracking lookahead must leave local planning margin')
+        count=nav.get('max_reference_samples',10000)
+        if type(count) is not int or not 10<=count<=20000:raise ValueError('Invalid navigation.max_reference_samples')
         for key in ('landing_ground_z_m','landing_target_tolerance_m'):
             if not math.isfinite(c['mission'][key]):raise ValueError('Invalid mission.'+key)
         if c['mission']['landing_target_tolerance_m']<0:raise ValueError('Landing target tolerance cannot be negative')

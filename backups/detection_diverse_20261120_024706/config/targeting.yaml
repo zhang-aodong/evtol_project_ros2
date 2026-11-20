@@ -1,0 +1,251 @@
+namespace: drone1
+airsim:
+  host: 127.0.0.1
+  port: 41451
+  vehicle: Drone1
+  timeout_s: 3.0
+actors_config: config/actors.yaml
+trajectory:
+  publish_hz: 2.0
+  min_distance_m: 0.05
+  max_points: 20000
+state:
+  source: truth
+  fused_topic: /drone1/localization/odometry
+  origin_file: data/session_origin.json
+  timeout_s: 0.3
+model:
+  task: detect
+  python: ''
+  weights: models/drone_detection_b2_1536.onnx
+  confidence: 0.25
+  iou: 0.5
+  max_det: 128
+  class_map:
+    0: 6
+  vendor: models/semantic_runtime
+  device: '0'
+  imgsz: 1536
+  max_hz: 20.0
+  timeout_s: 10.0
+  startup_timeout_s: 90.0
+  backend: onnx
+  require_gpu: true
+fusion:
+  max_sync_delta_ms: 50.0
+  wait_timeout_s: 0.25
+  pose_max_gap_s: 0.15
+lidar_obstacles:
+  enabled: true
+  rate_hz: 10.0
+  cluster_radius_m: 0.8
+  min_points: 3
+  max_extent_m: 4.0
+  range_m: 30.0
+  max_age_s: 0.4
+  scan_window_s: 0.12
+  measurement_std_m: 0.15
+  min_height_enu_m: 0.35
+  motion_window_s: 0.8
+  motion_min_span_s: 0.35
+  motion_min_speed_mps: 0.5
+  motion_max_residual_m: 0.25
+  motion_sigma: 2.0
+extrinsics:
+  camera:
+    xyz_frd_m:
+    - 0.0
+    - 0.0
+    - 0.0
+    rpy_deg:
+    - 0.0
+    - 0.0
+    - -15.0
+  lidar:
+    xyz_frd_m:
+    - 0.0
+    - 0.0
+    - 0.0
+    rpy_deg:
+    - 0.0
+    - 0.0
+    - 0.0
+detection:
+  target_class_ids:
+  - 3
+  - 6
+  box_min_lidar_points: 3
+  box_roi_padding_px: 4
+  min_lidar_points: 3
+  min_mask_pixels: 20
+  cluster_radius_m: 0.8
+  max_drone_extent_m: 4.0
+  max_pedestrian_extent_m: 3.0
+tracking:
+  max_age_s: 0.5
+  association_distance_m: 3.0
+  measurement_std_m: 0.4
+  acceleration_std_mps2: 2.0
+mission:
+  waypoints_enu_m:
+  - - 0.0
+    - 0.0
+    - 10.0
+  - - 0.0
+    - 100.0
+    - 10.0
+  - - 0.0
+    - 100.0
+    - 0.0
+  speed_mps: 2.0
+  tolerance_m: 0.35
+  arrival_speed_mps: 0.3
+  arrival_hold_s: 0.3
+  takeoff_height_m: 1.5
+  land_at_last: true
+  landing_ground_z_m: 0.0
+  landing_target_tolerance_m: 0.25
+  landing_handoff_m: 1.2
+  landing_surface_tolerance_m: 0.15
+navigation_lidar:
+  enabled: true
+  name: NavigationLidar
+  rate_hz: 20.0
+  range_m: 100.0
+  points_per_second: 230400
+  timeout_s: 0.3
+  scan_window_s: 0.3
+  minimum_sweep_s: 0.0
+navigation:
+  resolution_m: 0.5
+  planning_radius_m: 6.0
+  clearance_m: 0.8
+  max_nodes: 16000
+  search_budget_s: 0.08
+  lookahead_m: 1.5
+  replan_period_s: 0.5
+  position_gain: 0.5
+  velocity_damping: 0.4
+  strategy: horizontal_first_astar
+  vertical_cost: 1.5
+  sample_spacing_m: 2.0
+  tracking_lookahead_m: 3.0
+  max_reference_samples: 10000
+safety:
+  fused_avoidance_radius_m: 4.0
+  rate_hz: 20.0
+  cloud_timeout_s: 0.2
+  track_timeout_s: 0.5
+  max_points: 65536
+  observed_half_yaw_deg: 80.0
+  observed_half_pitch_deg: 10.0
+  horizon_s: 1.0
+  dynamic_clearance_m: 0.3
+  local_velocity:
+    detection_radius_m: 2.0
+    clearance_m: 0.8
+    max_acceleration_mps2: 1.0
+    braking_acceleration_mps2: 3.0
+    avoidance_acceleration_mps2: 3.0
+    reaction_time_s: 0.15
+    max_speed_mps: 2.0
+  dynamic:
+    horizon_s: 1.0
+    clearance_m: 0.3
+control:
+  rate_hz: 20.0
+  ttl_s: 0.2
+  duration_s: 0.05
+  rpc_timeout_s: 1.0
+  max_speed_mps: 2.0
+  takeoff_on_start: true
+  takeoff_timeout_s: 60.0
+evaluation:
+  batched_truth: true
+  truth_sample_hz: 50.0
+  vehicle_truth_frame: vehicle_local
+  truth_hz: 20.0
+  association_gate_m: 3.0
+  output_dir: data/evaluation
+ue_detection_boxes:
+  enabled: true
+  input_topic: perception/tracks
+  class_ids:
+  - 6
+  rate_hz: 10.0
+  message_timeout_s: 0.5
+  measurement_timeout_s: 1.0
+  clock_timeout_s: 0.5
+  line_lifetime_s: 0.2
+  line_thickness: 3.0
+  color_rgba:
+  - 0.0
+  - 1.0
+  - 0.0
+  - 1.0
+  min_size_enu_m:
+  - 1.0
+  - 1.0
+  - 0.5
+  padding_m: 0.15
+  max_boxes: 16
+  show_labels: true
+  label_scale: 1.0
+  rpc_timeout_s: 0.5
+  source_coordinates: vehicle_local
+  ego_actor_name: ''
+  global_ned_offset_m: null
+surround:
+  enabled: true
+  weights: models/drone_detection_b2_1536.onnx
+  front_diagnostic_inference: false
+  state_sample_hz: 50.0
+  width: 1536
+  height: 1536
+  horizontal_fov_deg: 70.0
+  imgsz: 1536
+  max_hz: 20.0
+  max_age_s: 0.35
+  min_mask_pixels: 6
+  min_lidar_points: 2
+  merge_distance_m: 0.7
+  scan_window_s: 0.15
+  roi_lidar: true
+  roi_prefetch: true
+  roi_search_pixels: 8
+  max_target_speed_mps: 4.0
+  max_motion_pixels: 12.0
+  cameras:
+  - name: front_left
+    rpy_deg:
+    - 0.0
+    - 0.0
+    - -15.0
+  - name: front_right
+    rpy_deg:
+    - 0.0
+    - 0.0
+    - 15.0
+  lidar:
+    name: NavigationLidar
+    rate_hz: 20.0
+    range_m: 100.0
+    points_per_second: 230400
+    channels: 128
+    vertical_fov_deg: 180.0
+    timeout_s: 0.35
+experiment:
+  region: front_hemisphere
+  radius_m: 10.0
+warnings:
+  lidar_radius_m: 5.0
+  lidar_enable_agl_m: 5.0
+  self_exclusion_m: 0.3
+  ground_column_radius_m: 1.0
+  ground_min_points: 3
+  ground_max_age_s: 2.0
+  fusion_radius_m: 10.0
+  prediction_horizon_s: 3.0
+  prediction_step_s: 0.5
+  max_measurement_age_s: 0.3
+  target_success_rate: 0.9
