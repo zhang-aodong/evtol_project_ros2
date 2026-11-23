@@ -115,9 +115,10 @@ class NodeContracts(unittest.TestCase):
                 node.receive(bad);self.assertEqual(node.sequence,1);self.assertEqual(node.command.velocity.x,1.)
         finally:node.close();node.destroy_node()
 
-    def navigation_node(self,goal,position=(0.,0.,3.),points=((8.,0.,0.),),phase='flying'):
+    def navigation_node(self,goal,position=(0.,0.,3.),points=((8.,0.,0.),),phase='flying',raw_radius=None):
         c=self.config();c['navigation_lidar']['enabled']=True;c['navigation']['async_planning']=False;c['mission']['waypoints_enu_m']=[goal]
         c['navigation_lidar']['minimum_sweep_s']=0.
+        if raw_radius is not None:c['safety']['raw_emergency']['radius_m']=raw_radius
         node=SafetyNode(c);node.pub=Capture();node.risk_pub=Capture();node.desired_pub=Capture()
         node.receive_origin(ReferenceOrigin(session_id='navigation-test'))
         t=node.get_clock().now().nanoseconds
@@ -270,7 +271,119 @@ class NodeContracts(unittest.TestCase):
             for timestamp,points in ((t-50_000_000,[[0.,0.,2.]]),(t,[[0.,0.,-3.]])):
                 pose=Odometry(header=header(timestamp));pose.pose.pose.orientation.w=1.;pose.pose.pose.position.z=3.
                 node.receive_pose(pose);msg=cloud(timestamp,points);msg.header.frame_id='drone1/base_link';node.receive_cloud(msg)
-            node.tick();self.assertEqual(node.pub.messages[-1].reason,'goal_obstructed')
+            node.tick()
+            self.assertTrue(node.safety_data['lidar_emergency']['active'])
+            self.assertAlmostEqual(node.safety_data['lidar_emergency']['nearest_m'],2.)
+            self.assertLessEqual(node.pub.messages[-1].velocity.z,0.)
+        finally:node.destroy_node()
+
+    def test_side_lidar_fallback_while_hovering_only_after_takeoff(self):
+        node=self.navigation_node([0.,0.,3.],points=((0.,2.3,0.),),phase='takeoff',raw_radius=2.5)
+        try:
+            node.tick();self.assertFalse(node.safety_data['lidar_emergency']['armed'])
+            self.assertEqual(node.planner.radius,2.)
+            node.mission.completed=True
+            node.receive_flight(String(data=json.dumps(dict(session_id='navigation-test',phase='flying'))))
+            node.previous_wall=time.perf_counter()-.05
+            node.tick()
+            cmd=node.pub.messages[-1]
+            self.assertEqual(cmd.reason,'lidar_emergency_escape')
+            self.assertLess(cmd.velocity.y,0.)
+            self.assertTrue(node.risk_pub.messages[-1].warning)
+            self.assertEqual(node.flight_planner.radius,2.5)
+            self.assertGreater(node.planner.radius,2.5)
+            self.assertLessEqual(node.planner.speed_limit,node.c['control']['max_speed_mps'])
+            self.assertAlmostEqual(node.risk_pub.messages[-1].nearest_obstacle_m,2.3,places=5)
+            node.flight_wall=time.perf_counter()-2.
+            node.tick();self.assertFalse(node.safety_data['lidar_emergency']['armed'])
+            self.assertEqual(node.pub.messages[-1].velocity.y,0.)
+        finally:node.destroy_node()
+
+    def test_raw_risk_serializes_and_publishes_unsigned_track_id(self):
+        from rclpy.serialization import serialize_message,deserialize_message
+        from evtol_perception_interfaces.msg import Risk
+        node=self.navigation_node([0.,20.,3.],points=((0.,.7,0.),))
+        publisher=node.risk_pub
+        # navigation_node uses captures. Also exercise a real ROS publisher:
+        # Python setters alone did not detect the negative uint64 in Jazzy.
+        real=node.create_publisher(Risk,'/isolated_raw_risk',10)
+        try:
+            node.tick();risk=publisher.messages[-1]
+            self.assertTrue(risk.warning);self.assertEqual(risk.track_id,0)
+            self.assertEqual(deserialize_message(serialize_message(risk),Risk).track_id,0)
+            real.publish(risk)
+        finally:node.destroy_node()
+
+    def test_emergency_freezes_planner_and_waypoint_then_replans_same_goal(self):
+        node=self.navigation_node([0.,20.,3.],points=((0.,1.8,0.),))
+        try:
+            with patch.object(node.navigator,'plan',wraps=node.navigator.plan) as planning:
+                with patch.object(node.mission,'reference',wraps=node.mission.reference) as advance:
+                    node.tick()
+                    self.assertEqual(planning.call_count,0);self.assertEqual(advance.call_count,0)
+            self.assertEqual(node.safety_data['control_mode'],'lidar_emergency')
+            self.assertEqual(node.mission.index,0);self.assertTrue(node.safety_data['planning_paused'])
+            self.assertNotEqual(node.pub.messages[-1].reason,'mission_land')
+            # Repeated complete clear scans start and then satisfy release hold.
+            node.raw_guard.o['release_hold_s']=.1
+            for i in range(4):
+                t=node.get_clock().now().nanoseconds
+                pose=Odometry(header=header(t));pose.pose.pose.orientation.w=1.;pose.pose.pose.position.z=3.
+                node.receive_pose(pose)
+                msg=cloud(t,[[8.,0.,0.]]);msg.header.frame_id='drone1/base_link';node.receive_cloud(msg)
+                node.receive_flight(String(data=json.dumps(dict(session_id='navigation-test',phase='flying'))))
+                node.tick();time.sleep(.04)
+            self.assertFalse(node.safety_data['planning_paused'])
+            self.assertGreater(node.plan_count,0);self.assertEqual(node.mission.index,0)
+            np.testing.assert_allclose(node.plan_goal,[0.,20.,3.])
+        finally:node.destroy_node()
+
+    def test_emergency_near_landing_handoff_never_requests_land(self):
+        node=self.navigation_node([0.,0.,0.],position=(0.,0.,1.2),points=((0.,1.8,0.),(0.,0.,-1.2)))
+        try:
+            node.mission.settled_since=time.perf_counter()-1.
+            node.mission.landing_started=True
+            node.tick()
+            self.assertEqual(node.mission.index,0);self.assertFalse(node.mission.landing_started)
+            self.assertEqual(node.mission.phase,'emergency')
+            self.assertNotEqual(node.pub.messages[-1].reason,'mission_land')
+        finally:node.destroy_node()
+
+    def test_normal_route_uses_fused_geometry_before_raw_emergency_range(self):
+        from evtol_perception_interfaces.msg import TargetArray,Target
+        from evtol_targeting.common import stamp
+        node=self.navigation_node([0.,20.,3.])
+        try:
+            t=node.get_clock().now().nanoseconds
+            target=Target(track_id=42,class_id=6,state='confirmed',last_measurement_stamp=stamp(t))
+            target.position.y=4.;target.position.z=3.
+            target.size.x=target.size.y=1.;target.size.z=.5
+            msg=TargetArray(header=header(t),session_id='navigation-test',image_stamp=stamp(t),lidar_stamp=stamp(t),targets=[target])
+            node.receive_tracks(msg)
+            with patch.object(node.navigator,'plan',wraps=node.navigator.plan) as planning:
+                node.tick()
+            self.assertTrue(planning.called)
+            geometry=planning.call_args.args[2]
+            self.assertGreater(len(geometry),0)
+            self.assertTrue(np.any(np.linalg.norm(geometry-[0.,0.,3.],axis=1)>2.))
+            self.assertFalse(node.safety_data['planning_paused'])
+        finally:node.destroy_node()
+
+    def test_gateway_watchdog_holds_fixed_altitude_until_control_recovers(self):
+        node=Gateway(self.config(),execute=False);node.phase='flying';calls=[]
+        class RPC:
+            def call(self,name,*args):
+                calls.append((name,args))
+                if name=='getMultirotorState':return dict(kinematics_estimated=dict(position=dict(x_val=0.,y_val=35.,z_val=-10.)))
+                return True
+        try:
+            rpc=RPC();node.velocity_task(rpc,None,False);node.velocity_task(rpc,None,False)
+            self.assertEqual(sum(n=='getMultirotorState' for n,_ in calls),1)
+            self.assertEqual([a[2] for n,a in calls if n=='moveByVelocityZ'],[-10.,-10.])
+            self.assertFalse(any(n in ('land','enableApiControl','armDisarm') for n,_ in calls))
+            cmd=VelocityCommand();cmd.velocity.y=1.
+            node.velocity_task(rpc,cmd,True)
+            self.assertEqual(calls[-1][0],'moveByVelocity');self.assertIsNone(node.watchdog_z)
         finally:node.destroy_node()
 
     def test_gateway_controlled_takeoff_and_verified_touchdown(self):

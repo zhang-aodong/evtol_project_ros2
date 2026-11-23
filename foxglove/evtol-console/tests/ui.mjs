@@ -6,7 +6,7 @@ const dom=new JSDOM('<div id="panel"></div>',{url:'http://127.0.0.1:9040'});
 globalThis.document=dom.window.document;
 const downloads=[];dom.window.HTMLAnchorElement.prototype.click=function(){downloads.push(this.download);};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const config={version:7,localization:{"enabled": true, "mode": "gnss_imu", "state_source": "truth", "evaluate": true, "reorder_s": 0.24, "max_queue": 3000, "max_imu_gap_s": 0.12, "stale_s": 0.3, "gravity_mps2": 9.80665, "accel_noise": 0.08, "gyro_noise": 0.004, "accel_bias_noise": 0.005, "gyro_bias_noise": 0.0005, "initial_velocity_std_mps": 2.0, "initial_attitude_std_deg": 2.0, "initial_accel_bias_std": 0.1, "initial_gyro_bias_std": 0.01, "stationary_window_s": 0.5, "stationary_accel_std": 0.08, "stationary_gyro_max": 0.03, "gnss_sigma_floor_m": 0.3, "gnss_nis_gate": 16.27, "fiveg_sigma_floor_m": 0.15, "fiveg_min_rsrp_dbm": -100.0, "fiveg_nis_gate": 16.0, "fiveg_cauchy_scale": 3.0, "gnss_lever_flu_m": [0.0, 0.0, 0.0], "fiveg_lever_flu_m": [0.0, 0.0, 0.0], "gnss_fault": {"enabled": false, "time_base": "flight", "default_mode": "normal", "segments": [{"start_s": 40.0, "end_s": 60.0, "mode": "dropout", "bias_enu_m": [0.0, 0.0, 0.0]}]}},sensors:{horizontal_fov_deg:70,imgsz:1536,width:1536,height:1536,max_hz:20},warnings:{lidar_radius_m:5,lidar_enable_agl_m:5,fusion_radius_m:10},experiment:{region:'front_hemisphere',radius_m:10,evidence_s:.3},dynamic:{enabled:true,horizon_s:3},ui:{log_filter:'',log_errors:false,log_follow:true,profile_default_distance_m:100},ue:{editor:'editor.exe',project:'scene.uproject',settings:'airsim.json',visible:true,width:1280,height:720},
+const config={version:8,raw_emergency:{"enabled": true, "radius_m": 2.0, "escape_speed_mps": 1.5, "self_exclusion_m": 0.25, "max_range_rate_mps": 12.0, "range_history_s": 0.25},localization:{"enabled": true, "mode": "gnss_imu", "state_source": "truth", "evaluate": true, "reorder_s": 0.24, "max_queue": 3000, "max_imu_gap_s": 0.12, "stale_s": 0.3, "gravity_mps2": 9.80665, "accel_noise": 0.08, "gyro_noise": 0.004, "accel_bias_noise": 0.005, "gyro_bias_noise": 0.0005, "initial_velocity_std_mps": 2.0, "initial_attitude_std_deg": 2.0, "initial_accel_bias_std": 0.1, "initial_gyro_bias_std": 0.01, "stationary_window_s": 0.5, "stationary_accel_std": 0.08, "stationary_gyro_max": 0.03, "gnss_sigma_floor_m": 0.3, "gnss_nis_gate": 16.27, "fiveg_sigma_floor_m": 0.15, "fiveg_min_rsrp_dbm": -100.0, "fiveg_nis_gate": 16.0, "fiveg_cauchy_scale": 3.0, "gnss_lever_flu_m": [0.0, 0.0, 0.0], "fiveg_lever_flu_m": [0.0, 0.0, 0.0], "gnss_fault": {"enabled": false, "time_base": "flight", "default_mode": "normal", "segments": [{"start_s": 40.0, "end_s": 60.0, "mode": "dropout", "bias_enu_m": [0.0, 0.0, 0.0]}]}},sensors:{horizontal_fov_deg:70,imgsz:1536,width:1536,height:1536,max_hz:20},warnings:{lidar_radius_m:5,lidar_enable_agl_m:5,fusion_radius_m:10},experiment:{region:'front_hemisphere',radius_m:10,evidence_s:.3},dynamic:{enabled:true,horizon_s:3},ui:{log_filter:'',log_errors:false,log_follow:true,profile_default_distance_m:100},ue:{editor:'editor.exe',project:'scene.uproject',settings:'airsim.json',visible:true,width:1280,height:720},
   actors:{count:0,agents:[],pedestrians_enabled:false},
   mission:{mode:'profile',speed_mps:2,max_speed_mps:4,max_acceleration_mps2:1,land_at_last:true,
     waypoints_enu_m:[[0,0,3]],profile:{heading_deg:0,points:[{speed_mps:0,height_m:0,distance_m:100},{speed_mps:2,height_m:10,distance_m:100},{speed_mps:2,height_m:10,distance_m:30},{speed_mps:0,height_m:0,distance_m:100}]}},
@@ -21,7 +21,7 @@ const dispose=mountConsole(document.querySelector('#panel'),async request=>{
   if(request.action==='status')return {ok:true,data:state};
   if(request.action==='collection_topics')return {ok:true,data:[{name:'/clock',types:['rosgraph_msgs/msg/Clock'],publishers:1},{name:'/drone1/imu/data',types:['sensor_msgs/msg/Imu'],publishers:1}]};
   if(['validate_collection','save_collection'].includes(request.action))return {ok:true,data:request.payload};
-  if(request.action==='import_config')return request.payload.version===7?{ok:true,data:structuredClone(request.payload)}:{ok:false,error:'Unsupported config'};
+  if(request.action==='import_config')return request.payload.version===8?{ok:true,data:structuredClone(request.payload)}:{ok:false,error:'Unsupported config'};
   if(request.action==='export_config')return {ok:true,data:request.payload.config||state.config};
   if(request.action==='export_run')return {ok:true,data:state.config};
   return {ok:true,data:{operation_id:'fixture'}};
@@ -117,6 +117,9 @@ try {
   $('#export-config').click();await wait(25);assert.ok(downloads.includes('evtol-experiment-draft.json'));
   $('#export-saved').click();await wait(25);assert.ok(downloads.includes('evtol-experiment-saved.json'));
   $('#export-run').click();await wait(25);assert.ok(downloads.includes('evtol-experiment-run.json'));
+  input($('[data-option="raw_emergency.radius_m"]'),2.5);
+  $('[data-save]').click();await wait(25);
+  assert.equal(requests.findLast(r=>r.action==='save').payload.raw_emergency.radius_m,2.5);
   state.ros_running=true;
   state.telemetry.detection_metrics_received_wall=Date.now()/1000;
   state.telemetry.detection_metrics={valid:true,scoring:true,stamp_s:1,session_id:'ui',radius_m:20,truth_count:2,detected_count:1,missed_count:1,false_positive_count:0,recall:.5,window_recall:.5,cumulative_recall:.5,precision:1,expected:2,known:2,targets:[]};
@@ -129,6 +132,12 @@ try {
   assert.match($('#dual-warnings').textContent,/90.0%/);
   assert.match($('#dual-warnings').textContent,/6.00/);
   assert.match($('#warning-targets').textContent,/8.00/);
+  state.telemetry.mission_received_wall=Date.now()/1000;
+  state.telemetry.mission={safety_data:{lidar_emergency:{armed:true,active:true,nearest_m:1.25,max_closing_mps:1.5,cells:2,action:'lidar_emergency_escape'}}};
+  await wait(300);assert.match($('#raw-emergency-status').textContent,/1.25/);
+  assert.match($('#raw-emergency-status').textContent,/lidar_emergency_escape/);
+  state.telemetry.mission_received_wall=0;await wait(300);
+  assert.doesNotMatch($('#raw-emergency-status').textContent,/1.25/);
   $('[data-tab="collection"]').click();$('#collect-refresh').click();await wait(25);
   assert.equal(document.querySelectorAll('[data-collect-topic]').length,2);
   const imu=$('[data-collect-topic="/drone1/imu/data"]');imu.checked=true;imu.dispatchEvent(new dom.window.Event('change'));

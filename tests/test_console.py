@@ -167,6 +167,23 @@ class ConfigurationContracts(unittest.TestCase):
             rpc.return_value.call.side_effect=ConnectionError('No UE')
             with self.assertRaises(ConnectionError):engine.start_ros()
         self.assertFalse(engine.processes)
+
+    def test_inflight_algorithm_failure_retains_gateway_instead_of_cleanup(self):
+        from types import SimpleNamespace
+        engine=Engine(self.root);self.addCleanup(engine.close)
+        engine.config['run']['execute']=True
+        engine.telemetry['flight']=dict(phase='flying')
+        process=lambda code:SimpleNamespace(process=SimpleNamespace(poll=lambda:code))
+        engine.processes=dict(safety=process(1),gateway=process(None),truth_sensor=process(None))
+        try:
+            with patch.object(engine,'rpc') as rpc,patch.object(engine,'stop_ros') as cleanup:
+                engine.ros_stop=lambda service,timeout:'holding'
+                rpc.return_value.call.return_value=True
+                engine.last_health=0.;engine.monitor()
+                cleanup.assert_not_called()
+                self.assertTrue(engine.telemetry['runtime_fault']['hold_requested'])
+                self.assertEqual(engine.telemetry['runtime_fault']['failed'],['safety'])
+        finally:engine.processes={}
     def test_windows_ros_diagnostic_byte_level_is_json_serializable(self):
         import sys
         from types import SimpleNamespace

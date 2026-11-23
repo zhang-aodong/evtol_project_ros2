@@ -23,11 +23,14 @@ class Gateway(Node):
         self.origin=None;self.command=None;self.received=0.;self.sequence=-1;self.state_ok=False
         self.state_wall=0.;self.lock=threading.Lock();self.stop=threading.Event();self.worker=None;self.lease=None
         self.bootstrapping=False
+        self.watchdog_z=None
+        self.failsafe=False
         self.phase='waiting' if execute else 'shadow';self.failure='';self.land_result=None;self.land_thread=None
         self.flight_pub=self.create_publisher(String,'/'+c['namespace']+'/control/flight_status',LATCHED)
         self.wall_clock=Clock(clock_type=ClockType.STEADY_TIME)
         self.create_timer(.2,self.publish_status,clock=self.wall_clock)
         self.create_service(Trigger,'/'+c['namespace']+'/control/stop',self.stop_service)
+        self.create_service(Trigger,'/'+c['namespace']+'/control/failsafe_hold',self.hold_service)
         self.create_subscription(ReferenceOrigin,'/simulation/reference_origin',self.receive_origin,LATCHED)
         self.create_subscription(VelocityCommand,'/'+c['namespace']+'/control/safe_velocity',self.receive,qos_profile_sensor_data)
         self.create_subscription(StateStatus,'/'+c['namespace']+'/state/status',self.status,10)
@@ -49,6 +52,13 @@ class Gateway(Node):
 
     def stop_service(self,request,response):
         self.stop.set();response.success=True;response.message='Stopping velocity execution; gateway cancels task, requests hover and releases API control'
+        return response
+
+    def hold_service(self,request,response):
+        self.failsafe=True
+        self.transition('failsafe_hold')
+        response.success=True
+        response.message='Flight fault latched: altitude hold with API control retained; stop/restart explicitly'
         return response
 
     def receive_origin(self,msg):
@@ -122,6 +132,7 @@ class Gateway(Node):
                 with self.lock:cmd=self.command;received=self.received;valid_state=self.state_ok and begun-self.state_wall<self.c['state']['timeout_s']
                 valid=bool(cmd and valid_state and -int(self.c['control'].get('clock_tolerance_s',.075)*1e9)<=now-ns(cmd.header.stamp)<=int(self.c['control']['ttl_s']*1e9)
                     and ns(cmd.valid_until)>now and begun-received<self.c['control']['ttl_s'])
+                valid=valid and not self.failsafe
                 if self.phase=='takeoff':
                     kin=rpc.call('getMultirotorState',vehicle)['kinematics_estimated']
                     risen=initial_z-vector(kin['position'])[2]
@@ -163,11 +174,9 @@ class Gateway(Node):
                     self.failure=''
                     self.transition('landing')
                     self.land_thread=threading.Thread(target=self.land,args=(vehicle,),daemon=True);self.land_thread.start();continue
-                velocity=NED_ENU@xyz(cmd.velocity) if valid else np.zeros(3)
                 # RPC waits for this short task. Timeouts cannot stack commands;
                 # each request expires after duration even if this process dies.
-                rpc.call('moveByVelocity',*map(float,velocity),self.c['control']['duration_s'],0,
-                    dict(is_rate=True,yaw_or_rate=-float(np.degrees(cmd.yaw_rate)) if valid else 0.),vehicle)
+                self.velocity_task(rpc,cmd,valid)
                 self.health.ok();self.stop.wait(max(0.,1./self.c['control']['rate_hz']-(time.perf_counter()-begun)))
         except Exception as exc:self.failure=str(exc);self.health.error(exc);self.transition('failed')
         finally:
@@ -177,6 +186,21 @@ class Gateway(Node):
                 except Exception as exc:self.health.error(exc)
             rpc.close()
             if self.stop.is_set():self.transition('stopped')
+
+    def velocity_task(self,rpc,command,valid):
+        vehicle=self.c['airsim']['vehicle']
+        velocity=NED_ENU@xyz(command.velocity) if valid else np.zeros(3)
+        yaw=dict(is_rate=True,yaw_or_rate=-float(np.degrees(command.yaw_rate)) if valid else 0.)
+        duration=self.c['control']['duration_s']
+        hold=self.phase in ('flying','landing_paused','failsafe_hold') and (not valid or np.linalg.norm(velocity)<1e-8)
+        if hold:
+            if self.watchdog_z is None:
+                self.watchdog_z=float(vector(rpc.call('getMultirotorState',vehicle)['kinematics_estimated']['position'])[2])
+                self.get_logger().warning('Velocity watchdog: brake horizontally and hold altitude; no landing or API release')
+            rpc.call('moveByVelocityZ',0.,0.,self.watchdog_z,duration,0,yaw,vehicle)
+        else:
+            self.watchdog_z=None
+            rpc.call('moveByVelocity',*map(float,velocity),duration,0,yaw,vehicle)
 
     def land(self,vehicle):
         c=self.c['airsim'];rpc=AirSimRPC(c['host'],c['port'],65.)

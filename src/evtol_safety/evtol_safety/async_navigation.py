@@ -34,6 +34,12 @@ class AsyncNavigator:
         self.process=ctx.Process(target=_worker,args=(self.requests,self.results,self.settings),daemon=True,name='evtol_local_planner')
         self.process.start()
 
+    def suspend(self):
+        # Do not submit work during emergency control. Any already bounded
+        # worker result belongs to the old generation and is discarded later.
+        self.version+=1;self.path=[];self.pending=None;self.goal=None;self.received=0.
+        self.reason='paused_for_lidar_emergency'
+
     def plan(self,p,goal,points):
         goal=np.asarray(goal,float);p=np.asarray(p,float);points=np.asarray(points,float).reshape(-1,3)
         now=time.monotonic()

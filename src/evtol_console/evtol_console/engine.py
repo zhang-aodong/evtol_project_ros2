@@ -210,6 +210,22 @@ class Engine:
         with self.lock:owned=list(self.processes.items())
         failed=[k for k,p in owned if k not in ('ue','collection') and p.process.poll() is not None]
         if failed and any(p.process.poll() is None for k,p in owned if k!='ue'):
+            gateway_alive=any(k=='gateway' and p.process.poll() is None for k,p in owned)
+            phase=self.telemetry.get('flight',{}).get('phase')
+            airborne=phase in ('takeoff','flying','landing','landing_paused','failsafe_hold')
+            if gateway_alive and ready and airborne and self.config['run']['execute']:
+                previous=self.telemetry.get('runtime_fault',{})
+                if previous.get('failed')!=failed or not previous.get('hold_requested'):
+                    self.log('ROS flight fault: '+', '.join(failed)+'; retain gateway and API control for altitude hold',level='ERROR')
+                    held=False
+                    if self.ros_stop:
+                        try:
+                            self.log(self.ros_stop('/'+self._namespace()+'/control/failsafe_hold',3.))
+                            held=True
+                        except Exception as exc:self.log('Failsafe hold request: '+str(exc),level='ERROR')
+                    with self.lock:self.telemetry['runtime_fault']=dict(failed=failed,hold_requested=held,
+                        reason='Algorithm exited in flight; gateway retained. Inspect logs, then stop explicitly.')
+                return
             self.log('A ROS child exited: '+', '.join(failed)+'; stopping the owned stack')
             with self.lock:self.busy=True
             try:self.stop_ros()
@@ -282,7 +298,8 @@ class Engine:
 
     def start_ros(self):
         if any(p.state()['running'] for k,p in self.processes.items() if k!='ue'):raise ValueError('ROS stack is already running')
-        with self.lock:self.telemetry.pop('startup',None)
+        with self.lock:
+            self.telemetry.pop('startup',None);self.telemetry.pop('runtime_fault',None)
         d,c,scenario,settings,compiled=artifacts(self.config,self.root)
         probe=self.rpc(2.)
         try:

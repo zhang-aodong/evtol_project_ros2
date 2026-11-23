@@ -6,7 +6,7 @@ detection sphere participate, independently of semantic class or point count.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 
 import numpy as np
@@ -21,6 +21,7 @@ class LocalVelocityDecision:
     nearest_obstacle_m: float | None
     speed_limit_mps: float
     dynamic_escape: bool = False
+    best_effort_escape: bool = False
 
 
 class LocalVelocityAvoidance:
@@ -61,7 +62,8 @@ class LocalVelocityAvoidance:
 
     def command(self, points_relative_enu_m, desired_enu_mps,
                 measured_enu_mps, dt_s, observation_age_s=0.0, goal_distance_m=None,
-                obstacles=(),dynamic_options=None,minimum_vertical_velocity_mps=None):
+                obstacles=(),dynamic_options=None,minimum_vertical_velocity_mps=None,best_effort_escape=False,
+                emergency_mode=False):
         desired = np.asarray(desired_enu_mps, dtype=float).reshape(3)
         measured = np.asarray(measured_enu_mps, dtype=float).reshape(3)
         dt = float(dt_s)
@@ -107,7 +109,12 @@ class LocalVelocityAvoidance:
                 np.sqrt((self.braking * stopping_delay)**2 + 2*self.braking*distances) - self.braking*stopping_delay))
 
         speed = min(float(np.linalg.norm(desired)), self.speed_limit)
+        if emergency_mode and obstacles:speed=self.speed_limit
         forward = desired / max(float(np.linalg.norm(desired)), 1e-12)
+        if emergency_mode and obstacles and np.linalg.norm(forward)<.1:
+            nearest_threat=min(obstacles,key=lambda o:np.linalg.norm(o.position))
+            forward=-nearest_threat.position/max(np.linalg.norm(nearest_threat.position),1e-12)
+            if np.linalg.norm(forward)<.1:forward=np.array([1.,0.,0.])
         dynamic_options=dynamic_options or DEFAULTS
         threatened=bool(obstacles) and candidate_clearance([desired],measured,obstacles,
             self.avoidance_acceleration,dynamic_options,delay)[0]<0.
@@ -126,10 +133,10 @@ class LocalVelocityAvoidance:
         if minimum_vertical_velocity_mps is not None:nominal_safe &= nominal[2]>=minimum_vertical_velocity_mps-1e-9
         if obstacles:
             nominal_safe &= candidate_clearance([nominal],measured,obstacles,self.avoidance_acceleration,dynamic_options,delay)[0]>=0.
-        if nominal_safe and not threatened and not self.static_recovery:
+        if nominal_safe and not threatened and not self.static_recovery and not (emergency_mode and obstacles):
             self.previous=nominal.copy();self.preferred_direction=None
             return LocalVelocityDecision(nominal,False,False,nearest,self.speed_limit,False)
-        if speed<1e-8 and threatened:
+        if speed<1e-8 and (threatened or (emergency_mode and obstacles)):
             # Hover is not safe when another aircraft is moving into us.
             nearest_threat=min(obstacles,key=lambda o:np.linalg.norm(o.position))
             forward=-nearest_threat.position/max(np.linalg.norm(nearest_threat.position),1e-12)
@@ -151,6 +158,11 @@ class LocalVelocityAvoidance:
                         directions.append(forward * math.cos(radians) + math.sin(radians) * (
                             side * math.cos(phi) + up * math.sin(phi)))
                 directions.append(-forward)
+                if emergency_mode:
+                    full=np.asarray([[x,y,z] for x in (-1.,0.,1.) for y in (-1.,0.,1.)
+                        for z in (-1.,0.,1.) if x or y or z])
+                    full/=np.linalg.norm(full,axis=1)[:,None]
+                    directions.extend(full)
             directions = np.asarray(directions)
             frees = free_distances(directions, margin, self.radius)
             candidates = directions * np.minimum(speed, stopping_speeds(frees))[:, None]
@@ -160,6 +172,7 @@ class LocalVelocityAvoidance:
         rates = np.where(delta @ self.previous < 0., self.braking, self.acceleration)
         if len(points) and frees[0] < self.radius and (goal_distance_m is None or frees[0] < goal_distance_m):
             rates = np.maximum(rates, self.avoidance_acceleration)
+        if emergency_mode:rates=np.maximum(rates,self.avoidance_acceleration)
         commands = self.previous + delta * np.minimum(1., rates*dt / np.maximum(
             np.linalg.norm(delta, axis=1), 1e-12))[:, None]
         # Repeated candidates (especially braking in dense scenes) must not
@@ -193,13 +206,18 @@ class LocalVelocityAvoidance:
         scores -= np.where(obstruction, .8*speed*(1.-frees/self.radius), 0.)
         if self.preferred_direction is not None:
             scores += .25*(candidates @ self.preferred_direction) / np.maximum(future_norms, 1e-12)
+        if emergency_mode and obstacles:
+            # Mission progress and the nominal heading have no priority here.
+            # Maximise predicted clearance using every reachable 3-D command.
+            scores=gaps[inverse]+.01*(commands@forward)
+            if self.preferred_direction is not None:scores+=.04*(commands@self.preferred_direction)
         scores[~valid] = -np.inf
         # A late raw return can put the aircraft inside the inflated planning
         # margin without physical contact. Hover then wins the progress score,
         # while A* cannot leave an occupied start voxel. Select a checked
         # departure that increases point clearance, with hysteresis until the
         # start is outside the route inflation. No invalid candidate is enabled.
-        if self.static_recovery and len(points) and speed>1e-8:
+        if self.static_recovery and len(points) and speed>1e-8 and not emergency_mode:
             close=points[np.linalg.norm(points,axis=1)<margin+.7]
             if len(close):
                 future=commands*.5
@@ -212,7 +230,8 @@ class LocalVelocityAvoidance:
             selected = int(np.flatnonzero(valid & (scores >= scores[selected]-1e-9))[0])
         best = commands[selected] if valid[selected] else None
         dynamic_escape=False
-        if best is None and threatened:
+        fallback_escape=False
+        if best is None and (threatened or (emergency_mode and obstacles)):
             # A nominal command ramp can make every immediate velocity unsafe
             # under a constant-target rollout. Test bounded evasive targets
             # against actual measured velocity and avoidance acceleration.
@@ -244,6 +263,27 @@ class LocalVelocityAvoidance:
                 # this emergency override of the nominal command slew only.
                 score=np.where(allowed,gaps+.05*(escape@forward),-np.inf)
                 best=escape[int(np.argmax(score))];dynamic_escape=True
+            elif best_effort_escape and any(o.track_id<0 for o in obstacles):
+                # A late, fast side approach can make collision-free motion
+                # impossible within the prediction horizon. A stationary
+                # command is then also unsafe. Choose a physically bounded
+                # departure only if it improves the worst predicted clearance
+                # and respects raw-ray braking. In emergency mode an inflated
+                # uncertain prediction may leave no guaranteed-safe solution;
+                # retain fused physical envelopes as hard constraints and
+                # report uncertainty-limited motion explicitly as best effort.
+                geometrically_allowed=lengths<=stopping_speeds(free)+1e-7
+                geometrically_allowed &= (segment_lengths<1e-8)|(entries>=segment_lengths)
+                if minimum_vertical_velocity_mps is not None:geometrically_allowed &= escape[:,2]>=float(minimum_vertical_velocity_mps)-1e-9
+                fused=[o for o in obstacles if o.track_id>=0]
+                if emergency_mode:
+                    fused=[replace(o,position_std=0.,velocity_std=0.) for o in fused]
+                if fused:geometrically_allowed &= candidate_clearance(escape,measured,fused,self.avoidance_acceleration,dynamic_options,delay)>=0.
+                brake=candidate_clearance([np.zeros(3)],measured,obstacles,self.avoidance_acceleration,dynamic_options,delay)[0]
+                improved=geometrically_allowed&(gaps>brake+.02)
+                if np.any(improved):
+                    score=np.where(improved,gaps+.001*(escape@forward),-np.inf)
+                    best=escape[int(np.argmax(score))];dynamic_escape=True;fallback_escape=True
         emergency = best is None
         if emergency:
             # Newly appearing/too-close obstacles can invalidate every smooth
@@ -255,4 +295,4 @@ class LocalVelocityAvoidance:
         elif not len(points):
             self.preferred_direction = None
         self.previous = best.copy()
-        return LocalVelocityDecision(best, bool(active), emergency, nearest, self.speed_limit,dynamic_escape)
+        return LocalVelocityDecision(best, bool(active), emergency, nearest, self.speed_limit,dynamic_escape,fallback_escape)

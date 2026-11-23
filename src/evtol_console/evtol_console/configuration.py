@@ -44,6 +44,8 @@ def defaults(root):
     from evtol_localization.options import options
     value['localization']=options(base.get('localization'))
     value['localization']['state_source']=base['state']['source']
+    from evtol_safety.raw_emergency import options as raw_options
+    value['raw_emergency']=raw_options(base['safety'].get('raw_emergency'))
     return value
 
 
@@ -124,6 +126,7 @@ def artifacts(draft,root):
         profile_speed_cap_mps=d['mission']['max_speed_mps'],profile_acceleration_cap_mps2=d['mission']['max_acceleration_mps2'])
     base['control']['max_speed_mps']=d['mission']['max_speed_mps']
     local=base['safety']['local_velocity'];local['max_speed_mps']=d['mission']['max_speed_mps'];local['max_acceleration_mps2']=d['mission']['max_acceleration_mps2']
+    base['safety']['raw_emergency']=copy.deepcopy(d['raw_emergency'])
     base['localization']=copy.deepcopy(d['localization'])
     base['state']['source']=d['localization']['state_source']
     if base['state']['source']=='fused':
@@ -135,14 +138,13 @@ def artifacts(draft,root):
     # Preserve the existing sensing/braking envelope. Reject unachievable
     # speed requests rather than quietly increasing the collision horizon.
     from evtol_safety.velocity import LocalVelocityAvoidance
-    envelope=LocalVelocityAvoidance(local,base['safety']['cloud_timeout_s'],base['control']['duration_s'],0.).speed_limit
+    cruise_radius=d['raw_emergency']['radius_m'] if d['raw_emergency']['enabled'] else local['detection_radius_m']
+    cruise_options={**local,'detection_radius_m':cruise_radius}
+    envelope=LocalVelocityAvoidance(cruise_options,base['safety']['cloud_timeout_s'],base['control']['duration_s'],0.).speed_limit
     requested=max([d['mission']['speed_mps']] if compiled is None else [p['speed_mps'] for p in compiled['points']])
     if requested>envelope+.001:
-        if local['detection_radius_m']<=2. and requested<=2.:
-            # A short raw emergency range cannot safely sustain the old
-            # 2 m/s speed with the measured controller/braking response.
-            # Preserve the user's draft; expose the actual enforced cap.
-            base['safety']['speed_limit_notice']=f'2 m raw emergency protection limits cruise to {envelope:.2f} m/s (requested {requested:g})'
+        if requested<=2.:
+            base['safety']['speed_limit_notice']=f'{cruise_radius:g} m LiDAR protection limits cruise to {envelope:.2f} m/s (requested {requested:g})'
         else:raise ValueError(f'Requested {requested:g} m/s exceeds the current sensor/braking envelope {envelope:.2f} m/s')
     base['experiment']=copy.deepcopy(d['experiment'])
     base['warnings']=copy.deepcopy(d['warnings'])

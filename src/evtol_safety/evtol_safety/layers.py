@@ -26,7 +26,7 @@ def descent_limit(position, target, anchor, phase, ground, clearance, braking):
     """Allow planned descents; keep evasion above the current leg's floor."""
     if phase=='takeoff':return 0.
     floor=ground+clearance
-    if phase in ('waypoint','complete') and anchor is not None:
+    if phase in ('waypoint','complete','emergency') and anchor is not None:
         floor=max(floor,min(float(anchor[2]),float(target[2]))-.4)
     gap=max(0.,float(position[2])-floor)
     return -min(np.sqrt(2*braking*gap),gap*2.)

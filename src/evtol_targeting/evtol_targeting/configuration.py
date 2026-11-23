@@ -4,6 +4,9 @@ import numpy as np
 
 
 def validate_config(c):
+    from evtol_safety.raw_emergency import options as raw_options
+    raw=raw_options(c['safety'].get('raw_emergency'))
+    if raw['radius_m']<=c['safety']['local_velocity']['clearance_m']:raise ValueError('Raw emergency radius must exceed ego clearance')
     if 'localization' in c or c['state']['source']=='fused':
         from evtol_localization.options import options
         localization=options(c.get('localization'))

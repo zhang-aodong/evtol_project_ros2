@@ -23,7 +23,8 @@ def main():
     p.add_argument('--label',default='fov100_cruise')
     p.add_argument('--height',type=float,default=8.)
     p.add_argument('--root',type=Path)
-    p.add_argument('--case',choices=['straight','turns','ground_hold','crossing','raw_emergency'],default='straight')
+    p.add_argument('--side-speed',type=float,default=.8)
+    p.add_argument('--case',choices=['straight','turns','ground_hold','crossing','raw_emergency','raw_side','raw_resume','watchdog'],default='straight')
     a=p.parse_args();root=a.root.resolve() if a.root else Path(__file__).resolve().parents[1]
     cfg=root/'config/console.local.json';original_hash=hashlib.sha256(cfg.read_bytes()).hexdigest()
     origin=root/'data/session_origin.json';original_origin=origin.read_bytes() if origin.exists() else None
@@ -35,12 +36,23 @@ def main():
         waypoints_enu_m=[[0,0,a.height],[0,12,a.height],[0,24,a.height]],land_at_last=False)
     engine.config['run'].update(execute=True,actors=False,evaluate=False,new_session=True)
     engine.config['ue']['visible']=False
+    if a.case=='watchdog':engine.config['mission']['waypoints_enu_m']=[[0.,0.,a.height]]
     if a.case=='turns':engine.config['mission']['waypoints_enu_m']=[[0,0,a.height],[0,12,a.height],[8,12,a.height],[8,4,a.height]]
     if a.case=='ground_hold':engine.config['mission']['waypoints_enu_m']=[[0,0,a.height],[0,12,a.height],[0,12,0]]
     if a.case=='raw_emergency':
         engine.config['mission']['waypoints_enu_m']=[[0,0,a.height],[0,24,a.height]]
         engine.config['actors'].update(count=1,agents=[dict(name='Drone2',speed_mps=1.,spawn_ned_m=[12.,0.,0.],waypoints_enu_m=[[0.,12.,a.height],[0.,12.,a.height]],repeat=0)],initialization='first_waypoint')
         engine.config['dynamic']['enabled']=False
+        engine.config['run'].update(actors=True,evaluate=True)
+    if a.case in ('raw_side','raw_resume'):
+        engine.config['mission']['waypoints_enu_m']=[[0.,0.,a.height]] if a.case=='raw_side' else [[0.,0.,a.height],[0.,12.,a.height]]
+        y=0. if a.case=='raw_side' else 4.
+        engine.config['actors'].update(count=1,agents=[dict(name='Drone2',speed_mps=a.side_speed,
+            spawn_ned_m=[y,7.,0.],waypoints_enu_m=[[7.,y,a.height],[-7.,y,a.height]],repeat=0)],
+            initialization='first_waypoint')
+        engine.config['dynamic']['enabled']=False
+        engine.config['localization']['state_source']='truth'
+        engine.config['raw_emergency'].update(enabled=True,radius_m=2.)
         engine.config['run'].update(actors=True,evaluate=True)
     if a.case=='crossing':
         engine.config['mission']['waypoints_enu_m']=[[0,0,a.height],[0,24,a.height]]
@@ -51,7 +63,7 @@ def main():
         engine.config['actors'].update(count=6,agents=agents,initialization='first_waypoint')
         engine.config['run'].update(actors=True,evaluate=True)
     bridge=ConsoleBridge(engine,'drone1',0);executor=SingleThreadedExecutor();executor.add_node(bridge)
-    done=threading.Event();rows=[];latest={};error=None;collisions=[];last_collision=0;last_check=0
+    done=threading.Event();rows=[];latest={};error=None;collisions=[];last_collision=0;last_check=0;fault_injected=None
     def pose(m):
         p=m.pose.pose.position;v=m.twist.twist.linear
         latest.update(position=[p.x,p.y,p.z],velocity=[v.x,v.y,v.z])
@@ -77,8 +89,14 @@ def main():
         deadline=time.monotonic()+a.seconds;last_print=0.
         while time.monotonic()<deadline:
             status=engine.status();telemetry=status['telemetry']
-            row=json.loads(json.dumps(dict(wall=time.time(),**latest,mission=telemetry.get('mission'),flight=telemetry.get('flight'))))
+            row=json.loads(json.dumps(dict(wall=time.time(),**latest,mission=telemetry.get('mission'),
+                flight=telemetry.get('flight'),runtime_fault=telemetry.get('runtime_fault'),
+                actors=telemetry.get('actors') if a.case in ('raw_side','raw_resume') else None)))
             rows.append(row)
+            if a.case=='watchdog' and fault_injected is None and (row.get('mission') or {}).get('phase')=='complete':
+                fault_injected=time.time()
+                engine.processes['safety'].stop()
+                print('Injected exit of test-owned safety node',flush=True)
             if time.monotonic()-last_check>1.:
                 last_check=time.monotonic();rpc=engine.rpc(1.)
                 try:
@@ -120,6 +138,15 @@ def main():
             maximum_stopped=max(maximum_stopped,stopped)
         result['longest_stationary_waypoint_s']=maximum_stopped
         result['collision_records_raw']=list(collisions)
+        if a.case=='watchdog':
+            held=[r for r in rows if fault_injected is not None and r['wall']>fault_injected+3. and r.get('position')]
+            heights=[r['position'][2] for r in held]
+            result['watchdog']=dict(injected=fault_injected,hold_samples=len(held),
+                min_height_m=min(heights,default=None),max_height_m=max(heights,default=None),
+                gateway_held=any((r.get('flight') or {}).get('phase')=='failsafe_hold' for r in held),
+                manager_held=any((r.get('runtime_fault') or {}).get('hold_requested') for r in held))
+            if not held or not result['watchdog']['gateway_held'] or not result['watchdog']['manager_held'] or min(heights)<a.height-.5 or max(heights)-min(heights)>.3:
+                result['error']=error='Watchdog did not retain stable airborne altitude'
         if run and (run/'gateway.log').is_file():
             match=re.search(r'\[([\d.]+)\].*Flight phase: takeoff',(run/'gateway.log').read_text())
             if match:
@@ -127,6 +154,27 @@ def main():
                 result['airborne_collisions']=[v for v in collisions if v['collision']['time_stamp']>=takeoff_ns]
                 result['spawn_contacts_before_takeoff']=[v for v in collisions if v['collision']['time_stamp']<takeoff_ns]
                 result['takeoff_stamp_ns']=takeoff_ns
+        if a.case in ('raw_side','raw_resume'):
+            guard_states=[(row.get('mission') or {}).get('safety_data',{}).get('lidar_emergency',{}) for row in rows]
+            active=[state for state in guard_states if state.get('active')]
+            result['lidar_emergency']=dict(
+                active_samples=len(active),
+                nearest_return_m=min((state['nearest_m'] for state in active if state.get('nearest_m') is not None),default=None),
+                actions=sorted({state['action'] for state in active if 'action' in state}),
+            )
+            pauses=[r for r in rows if (r.get('mission') or {}).get('safety_data',{}).get('planning_paused')]
+            violations=[]
+            for before,after in zip(rows,rows[1:]):
+                a1=before.get('mission') or {};b1=after.get('mission') or {}
+                ad=a1.get('safety_data',{});bd=b1.get('safety_data',{})
+                if ad.get('planning_paused') and bd.get('planning_paused') and (ad.get('planning_updates')!=bd.get('planning_updates') or a1.get('waypoint_index')!=b1.get('waypoint_index')):
+                    violations.append(after['wall'])
+            result['emergency_planning_pause_samples']=len(pauses)
+            result['emergency_progression_violations']=violations
+            if violations:result['error']=error='Mission/planner advanced during emergency'
+            if not error and (not active or result['airborne_collisions'] or not result['completed']):
+                error='Expected LiDAR intervention, mission completion and zero airborne collisions'
+                result['error']=error
         (out/'samples.json').write_text(json.dumps(rows),encoding='utf8')
         (out/'result.json').write_text(json.dumps(result,indent=2),encoding='utf8')
         print(json.dumps(result),flush=True)

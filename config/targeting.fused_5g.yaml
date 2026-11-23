@@ -132,6 +132,15 @@ navigation:
   tracking_lookahead_m: 3.0
   max_reference_samples: 10000
 safety:
+  raw_emergency:
+    enabled: true
+    radius_m: 2.0
+    escape_speed_mps: 1.5
+    self_exclusion_m: 0.25
+    max_range_rate_mps: 12.0
+    range_history_s: 0.25
+    release_margin_m: 0.4
+    release_hold_s: 0.5
   fused_avoidance_radius_m: 4.0
   rate_hz: 20.0
   cloud_timeout_s: 0.35
