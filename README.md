@@ -1,6 +1,6 @@
 # EVTOL Windows ROS 2 仿真数据功能包
 
-新增 GNSS+IMU / 逐站 5G-A 自机定位、Foxglove 独立误差与断星恢复测试：[启动与配置教程](docs/自机定位第一版.md)，[实际 UE / 同包验收记录](docs/ego_localization_acceptance.md)。默认保留已验证的定位器，新增可选绝对定位后端、独立 Camera+IMU VIO 和精度评估入口，见 [合并后定位使用说明](docs/ego-localization.md)。原定位器历史实测状态年龄约 246 ms，尚未达到协议 30 ms；新增后端不代表已通过真实 UE 场景精度验收。
+新增 GNSS+IMU / 逐站 5G-A 自机定位、Foxglove 独立误差与断星恢复测试：[启动与配置教程](docs/自机定位第一版.md)，[实际 UE / 同包验收记录](docs/ego_localization_acceptance.md)。当前自机定位统一使用 `origin/feat/ego-localization`：GNSS+IMU、逐站 5G-A 融合及 Camera+IMU VIO；旧滤波器已移除，默认、控制台和回放均使用分支实现。模式、噪声配置和迁移说明见 [定位使用说明](docs/ego-localization.md)。已有历史验收记录不代表当前实现的真实 UE 飞行精度。
 
 当前默认采用 **2 m 起飞后全向点云紧急避障、6 m 局部搜索、2 Hz 路径规划、20 Hz 速度碰撞检查**；动态避碰预测缩短至 1 s，预警仍独立保留前向 10 m 半球与 5 m 雷达。当前三路相机每路 70°、偏航 -60°/0°/+60°，水平覆盖约 190°。当前配置和实测见 [近距避障与2Hz规划](docs/近距避障与2Hz规划.md)；采样路径和相机说明见 [相机100度与采样匀速飞行](docs/相机100度与采样匀速飞行.md)。此前宽视场 32 机预警率不能代表当前配置性能。
 

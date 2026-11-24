@@ -23,10 +23,7 @@ def estimator_module(settings):
         raise ValueError(f"Unknown localization mode {mode!r}")
     if mode == "camera_imu" and settings["state"]["source"] == "fused":
         raise ValueError("Local VIO requires a map alignment before it can own map_enu state")
-    backend=section.get('estimator','legacy')
-    if mode=='camera_imu':return MODULES[mode]
-    if backend not in ('legacy','absolute'):raise ValueError('Unknown localization estimator: '+str(backend))
-    return 'evtol_localization.node' if backend=='legacy' else MODULES[mode]
+    return MODULES[mode]
 
 
 def experiment_config(base, mode, fused, outage):

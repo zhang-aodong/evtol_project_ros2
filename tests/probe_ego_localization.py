@@ -49,7 +49,7 @@ def main():
         settings=collection_defaults();prefix='/drone1/'
         settings['output_dir']=str(out/'sensor_bag')
         settings['bag']['topics']=['/clock','/simulation/reference_origin','/simulation/geodetic_reference']+[prefix+x for x in
-            ('imu/data','gnss/fix','five_ga/observations','ground_truth/local_odometry','ground_truth/odometry','control/flight_status','localization/status','localization/odometry')]
+            ('imu/data','gnss/home','gnss/fix','five_ga/observations','ground_truth/local_odometry','ground_truth/odometry','control/flight_status','localization/status','localization/odometry')]
         operation('start_collection',dict(mode='bag',config=settings),timeout=40)
         deadline=time.monotonic()+a.seconds
         while time.monotonic()<deadline:

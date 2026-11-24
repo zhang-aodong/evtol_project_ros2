@@ -2,21 +2,35 @@
 
 三种模式都在 ROS 2 中按观测时间在线更新。前两组使用同一套 GNSS Fix、IMU 和误差状态卡尔曼滤波器；第二组再逐站融合 5G-A 测距。第三组只使用前视图像、相机内参和 IMU，以静止起点建立局部坐标。
 
-## 合并后的默认行为与选择规则
+## 当前生效的算法与配置
 
-当前分支 `dev_master_zad` 保留 master 的现有定位器与本地配置。默认 `localization.estimator: legacy`，传感器误差使用 `fix_profile: native`、`fiveg_profile: native`；启动脚本不传 `-LocalizationMode` 时不会自动使用新增算法或加噪实验。
+`dev_master_zad` 统一采用 `origin/feat/ego-localization` 的定位算法。默认、控制台、ROS launch、旧命令入口和录包回放均使用该分支实现，已移除原有 ESKF/FusionStream 实现和新旧定位器选择界面。
 
-- `mode: gnss_imu` / `gnss_imu_5g` 配合 `estimator: legacy`：沿用现有定位器、断星恢复和 Foxglove 三维/X/Y/Z 误差曲线。
-- 上述模式配合 `estimator: absolute`：选择新增的 ESKF、延迟观测重放与逐站测距质量门限。输出相同会话 ENU 里程计、轨迹、状态，复用独立误差评价。原有滤波参数与新增后端参数不等价；新增后端配置放在 `localization.absolute`，字段见 `absolute.Settings`。
-- `mode: camera_imu`：启动独立 VIO，仅输出 `/drone1/localization/vio/odometry`，不能选择 fused 控制。使用下文 `accuracy --mode camera_imu` 评价初始航向/平移对齐后的误差；现有 ENU 误差曲线不会将局部 VIO 冒充绝对定位。
+| 模式 | 生效模块 | 输出 |
+|---|---|---|
+| `gnss_imu` | `evtol_localization.absolute_node` | 会话 ENU `/drone1/localization/odometry` |
+| `gnss_imu_5g` | 同一分支 ESKF，额外逐站融合 5G-A | 同上 |
+| `camera_imu` | `evtol_localization.vio_node` | 局部 `/drone1/localization/vio/odometry` |
 
-控制台“定位实现”可切换两种绝对定位器。保存后需停止并重新启动 ROS。所有入口共享选择规则，同一时刻仅启动一套自机定位器。现有误差存储失败重试、非关键进程故障隔离和避障恢复逻辑保留。
+默认配置保持定位开启，算法默认采用该分支参数。GNSS/5G 仿真观测误差配置采用分支的 `fix_profile: standalone`、`fiveg_profile: moderate`、额外测距标准差 `fiveg_added_sigma_m: 1.2`；`absolute.min_rsrp_dbm: -32`。standalone 包含 GNSS 漂移和白噪声；moderate 包含额外测距噪声、指定基站失链和 NLOS 偏置。设为 `native` 可单独关闭对应观测退化，定位算法仍使用该分支。
 
-显式传 `-LocalizationMode` 是新增分支的**误差实验预设**：选择新增后端，并在仿真采集端启用 standalone GNSS 漂移/白噪声和 moderate 5G 退化（额外测距标准差 1.2 m、指定基站失链与 NLOS）。如需使用原始噪声配置，请编辑 YAML 中的 estimator/mode，保持两个 profile 为 native，再用 `-Config` 启动、不传 `-LocalizationMode`。所有预设写入独立运行快照，不覆盖操作者配置。
+只需按原方式启动，无需额外选择新增实现：
 
-GNSS 采集器同时发布原有 `/simulation/geodetic_reference` 和启用定位时的 `/drone1/gnss/home`，采用同一有效地理原点。录包包含两种参考、两种里程计及现有误差/状态话题。回放默认定位器时，还需在下列播放话题中加入 `/simulation/geodetic_reference`。
+```powershell
+.\scripts\start_experiment.ps1 -NewSession -Execute -Actors
+```
 
-以下历史数值与 WSL 验证记录来自被合入分支，不是合并后 Windows UE 的新实测结果。实际性能须在同一数据、相同噪声配置下重新比较。
+在 Foxglove 定位页可以选择三个输入模式。绝对定位参数直接写入 `localization.absolute`，例如观测历史窗口、最大 IMU 间隔、GNSS/5G 标准差下限和最低 RSRP；更完整的字段见 `absolute.Settings`。VIO 配置在 `localization.vio`。保存后重新启动 ROS 生效。
+
+现有 `console.local.json` 和导入配置在加载时迁移：`estimator: legacy` 转换为 `absolute`；可对应的旧噪声、门限、杆臂参数转入 `absolute`，显式 `absolute` 值优先；新算法没有对应含义的旧初始化/队列参数移除。已明确保存的传感器噪声 profile 和飞行航点予以保留。`estimator` 仅作为派生状态/旧配置兼容字段，不再提供算法选择。
+
+旧 `ros2 run evtol_localization ego_localization` 和 `python -m evtol_localization.node` 兼容入口根据 mode 调用分支节点；`absolute`、`vio`、`accuracy` 独立入口继续可用。`scripts/compare_localization_bag.py` 也通过同一个 AbsoluteNode 处理记录观测，历史对比报告属于旧实现结果，不能视作当前算法验收。
+
+保留的框架适配包括定位轨迹与状态、Foxglove 三维/X/Y/Z 误差曲线、可配置 GNSS 中断/失锁/偏置/恢复、评价文件写入失败重试。GNSS 两种模式共享会话 ENU，真值只由独立评价器使用。VIO 是局部坐标，尚不能直接接管 ENU 控制；请用 `accuracy --mode camera_imu` 评价初始航向/平移对齐后的误差。
+
+GNSS 采集器同时发布相同原点到 `/simulation/geodetic_reference` 与 `/drone1/gnss/home`。定位节点兼容两个话题，因此旧 bag 仅含前者也可回放。录包保留两个参考、定位输出及现有误差/状态话题。
+
+以下历史数值与 WSL 验证记录来自被合入分支，不是合并后 Windows UE 的新实测结果。当前算法的真实飞行精度仍需在目标场景验证。
 
 ## 在 Windows 上运行
 

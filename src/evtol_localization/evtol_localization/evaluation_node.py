@@ -11,7 +11,7 @@ from geometry_msgs.msg import Vector3Stamped,PoseStamped
 from std_msgs.msg import String,Float64
 from evtol_perception_interfaces.msg import ReferenceOrigin
 from evtol_targeting.common import args_config,ns,xyz,put,header,clone,LATCHED,project_path
-from .node import SENSOR_QOS
+from .qos import SENSOR_QOS
 from .options import options,fault_at
 from .evaluation import ErrorAudit
 from .storage import EvaluationStorage

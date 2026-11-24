@@ -29,12 +29,12 @@ class MergeContracts(unittest.TestCase):
         from evtol_localization.settings import experiment_config, estimator_module
         base = self.settings()
         default = options(base['localization'])
-        self.assertEqual(default['estimator'], 'legacy')
-        self.assertEqual((default['fix_profile'], default['fiveg_profile']), ('native', 'native'))
-        self.assertEqual(estimator_module(base), 'evtol_localization.node')
+        self.assertEqual(default['estimator'], 'absolute')
+        self.assertEqual((default['fix_profile'], default['fiveg_profile']), ('standalone', 'moderate'))
+        self.assertEqual(estimator_module(base), 'evtol_localization.absolute_node')
         for mode in ('gnss_imu', 'gnss_imu_5g', 'camera_imu'):
             value = experiment_config(base, mode, False, False)
-            self.assertNotEqual(estimator_module(value), estimator_module(base))
+            self.assertTrue(estimator_module(value).endswith('vio_node' if mode=='camera_imu' else 'absolute_node'))
         with self.assertRaises(ValueError):
             experiment_config(base, 'camera_imu', True, False)
         with self.assertRaises(ValueError):
@@ -91,6 +91,74 @@ class MergeContracts(unittest.TestCase):
             self.assertIn(topic, (ROOT/'scripts/record.ps1').read_text(encoding='utf-8-sig'))
         deps = [e.text for e in ET.parse(ROOT/'src/evtol_bringup/package.xml').findall('exec_depend')]
         self.assertEqual(len(deps), len(set(deps)))
+
+    def test_replay_launch_and_old_entry_use_branch_modules(self):
+        from launch import LaunchContext
+        from launch.utilities import perform_substitutions
+        from unittest.mock import patch
+        from evtol_localization import node
+        spec = importlib.util.spec_from_file_location('ego_replay_launch',
+            ROOT/'src/evtol_bringup/launch/ego_localization_replay.launch.py')
+        launch = importlib.util.module_from_spec(spec); spec.loader.exec_module(launch)
+        for mode in ('gnss_imu', 'gnss_imu_5g', 'camera_imu'):
+            c = self.settings(); c['localization'].update(mode=mode, estimator='legacy')
+            expected = 'evtol_localization.' + ('vio_node' if mode=='camera_imu' else 'absolute_node')
+            context = LaunchContext(); context.launch_configurations['config'] = 'test.yaml'
+            with patch.object(launch.Path, 'read_text', return_value=yaml.safe_dump(c)):
+                actions = launch.nodes(context)
+            cmds = [[perform_substitutions(context, part) for part in a.cmd] for a in actions]
+            self.assertIn(expected, str(cmds))
+            self.assertNotIn('evtol_localization.node', str(cmds))
+            with patch('evtol_targeting.common.args_config', return_value=(c, [])), patch.object(node, 'import_module') as load:
+                node.main(['--config', 'test.yaml'])
+                load.assert_called_once_with(expected)
+
+    def test_offline_comparison_runs_the_same_branch_node(self):
+        from sensor_msgs.msg import Imu, NavSatFix
+        from nav_msgs.msg import Odometry
+        from std_msgs.msg import String
+        from evtol_perception_interfaces.msg import ReferenceOrigin
+        from evtol_sim_interfaces.msg import FiveGObservations, FiveGLink
+        from evtol_targeting.common import header, put
+        from evtol_localization.absolute import GRAVITY
+        spec = importlib.util.spec_from_file_location('same_branch_replay', ROOT/'scripts/compare_localization_bag.py')
+        replay = importlib.util.module_from_spec(spec); spec.loader.exec_module(replay)
+        start = 1_000_000_000
+        home = NavSatFix(header=header(start,'map'),latitude=45.,longitude=120.,altitude=560.)
+        home.status.status = 0
+        events = [('/simulation/reference_origin', ReferenceOrigin(header=header(start),source_frame='map',session_id='offline'),start),
+                  ('/drone1/gnss/home',home,start),
+                  ('/drone1/control/flight_status',String(data=json.dumps(dict(session_id='offline',phase='takeoff',takeoff_stamp_ns=start))),start)]
+        for i in range(601):
+            t = start+i*10_000_000
+            imu = Imu(header=header(t)); imu.orientation.w=1.; imu.linear_acceleration.z=GRAVITY
+            events.append(('/drone1/imu/data',imu,t))
+            if i%10==0:
+                fix = copy.deepcopy(home); fix.header=header(t,'drone1/gnss_link')
+                fix.position_covariance=np.eye(3).ravel().tolist();fix.position_covariance_type=2
+                events.append(('/drone1/gnss/fix',fix,t))
+                radio=FiveGObservations(header=header(t,'map'))
+                link=FiveGLink(gnb_id='test',measured_range_m=10.,range_sigma_m=.2,prs_rsrp_dbm=-20.,measurement_valid=True)
+                put(link.base_station_enu,[10.,0.,0.]);radio.observations.append(link)
+                events.append(('/drone1/five_ga/observations',radio,t))
+            if i%5==0:
+                truth=Odometry(header=header(t));truth.pose.pose.orientation.w=1.
+                events.append(('/drone1/ground_truth/local_odometry',truth,t))
+        for mode in ('gnss_imu','gnss_imu_5g'):
+            result=replay.replay(events,self.settings(),mode,True,2.,4.)
+            self.assertEqual(result['estimator'],'origin/feat/ego-localization')
+            self.assertGreater(result['state_hz'],90.)
+            self.assertLess(result['summary']['rmse_3d_m'],.001)
+            self.assertGreater(result['observations']['counts']['fix/injected_dropout'],10)
+            self.assertTrue(result['observations']['recovery_events'])
+            if mode=='gnss_imu_5g':
+                self.assertGreater(result['observations']['counts']['radio/accepted'],20)
+
+    def test_ui_edits_effective_branch_parameters(self):
+        text=(ROOT/'src/evtol_console/evtol_console/web/app.js').read_text(encoding='utf8')
+        self.assertNotIn('data-bind="localization.estimator"',text)
+        self.assertIn('data-bind="localization.absolute.min_rsrp_dbm"',text)
+        self.assertIn('<option value="camera_imu">',text)
 
     def test_absolute_shared_fault_schedule_path_and_status(self):
         import rclpy

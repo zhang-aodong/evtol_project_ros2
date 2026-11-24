@@ -29,7 +29,7 @@ class AbsoluteNode(Node):
         self.root = '/' + config['namespace'].strip('/')
         self.base_frame = self.root[1:] + '/base_link'
         self.options = options(config.get('localization'))
-        self.mode = config['localization']['mode']
+        self.mode = self.options['mode']
         if self.mode not in ('gnss_imu', 'gnss_imu_5g'):
             raise ValueError('unsupported absolute localization mode')
         filter_options = dict(self.options['absolute'])
@@ -43,6 +43,7 @@ class AbsoluteNode(Node):
         self.origin = self.home = self.frame = None
         self.session = self.raw_frame = ''
         self.epoch = self.sim_now = self.published = 0
+        self.get_logger().info('Using origin/feat/ego-localization absolute estimator: ' + self.mode)
         self.last_imu_wall = None
         self.clock_wall = self.last_stalled_report = time.monotonic()
         self.resets = 0
@@ -60,6 +61,8 @@ class AbsoluteNode(Node):
         self.status_pub = self.create_publisher(String, self.root + '/localization/status', 10)
         self.create_subscription(ReferenceOrigin, '/simulation/reference_origin', self.on_origin, LATCHED)
         self.create_subscription(NavSatFix, self.root + '/gnss/home', self.on_home, LATCHED)
+        # Existing bags publish the same datum under the earlier topic name.
+        self.create_subscription(NavSatFix, '/simulation/geodetic_reference', self.on_home, LATCHED)
         self.create_subscription(Clock, '/clock', self.on_clock, qos_profile_sensor_data)
         self.create_subscription(Imu, self.root + '/imu/data', self.on_imu, qos_profile_sensor_data)
         self.create_subscription(NavSatFix, self.root + '/gnss/fix', self.on_fix, qos_profile_sensor_data)
@@ -228,7 +231,7 @@ class AbsoluteNode(Node):
         self.published = s.t
         self.publish_times.append(time.monotonic())
         if self.pending_recovery is not None and s.last_fix >= self.pending_recovery:
-            self.recoveries.append(dict(stamp_ns=s.last_fix, correction_m=s.fix_jump))
+            self.recoveries.append(dict(stamp_ns=s.last_fix, correction_m=s.fix_jump, accepted=True))
             self.recoveries = self.recoveries[-100:]
             self.pending_recovery = None
         if s.t - self.last_path_ns >= 200_000_000:
@@ -264,7 +267,8 @@ class AbsoluteNode(Node):
                       stamp_ns=self.sim_now, state_age_s=age,
                       publish_hz=(len(self.publish_times)-1)/span if span else 0.,
                       gnss_fault_time_base_ns=self.fault_base(), gnss_fault_mode=self.gnss_fault_mode,
-                      recovery_events=self.recoveries, truth_used_for_estimation=False)
+                      recovery_events=self.recoveries, truth_used_for_estimation=False,
+                      counts=dict(self.timeline.counts), effective_filter_config=self.options['absolute'])
         self.status_pub.publish(String(data=json.dumps(report, allow_nan=False)))
         if status in ('stale', 'inertial_only'):
             self.health.last_error = status

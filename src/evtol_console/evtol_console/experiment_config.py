@@ -36,6 +36,8 @@ def upgrade(value):
     if d['version']==7:
         from evtol_safety.raw_emergency import options
         d['version']=8;d['raw_emergency']=options(d.get('raw_emergency'))
+    from evtol_localization.options import options as localization_options
+    d['localization']=localization_options(d.get('localization'))
     from evtol_safety.warnings import DEFAULTS as WARNINGS
     d.setdefault('warnings',copy.deepcopy(WARNINGS))
     return d

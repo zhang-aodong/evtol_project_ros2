@@ -21,7 +21,7 @@ class WorkflowTest(unittest.TestCase):
             self.assertTrue(estimator_module(settings).endswith(
                 "vio_node" if mode == "camera_imu" else "absolute_node"))
         self.assertEqual(base["state"]["source"], "truth")
-        self.assertEqual(estimator_module(base), 'evtol_localization.node')
+        self.assertEqual(estimator_module(base), 'evtol_localization.absolute_node')
         self.assertIsNone(estimator_module({'localization': {'enabled': False}}))
         with self.assertRaises(ValueError):
             experiment_config(base, "camera_imu", True, False)
