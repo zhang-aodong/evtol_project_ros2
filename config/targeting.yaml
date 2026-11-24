@@ -14,6 +14,14 @@ state:
   fused_topic: /drone1/localization/odometry
   origin_file: data/session_origin.json
   timeout_s: 0.3
+localization:
+  enabled: false
+  mode: gnss_imu
+  fix_profile: standalone
+  fiveg_profile: moderate
+  fiveg_added_sigma_m: 1.2
+  absolute:
+    min_rsrp_dbm: -32.0
 model:
   task: detect
   python: ''

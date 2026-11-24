@@ -6,6 +6,10 @@
 /drone1/lidar/points: {reliability: best_effort, durability: volatile, history: keep_last, depth: 20}
 /drone1/imu/data: {reliability: best_effort, durability: volatile, history: keep_last, depth: 100}
 /drone1/gnss/fix: {reliability: best_effort, durability: volatile, history: keep_last, depth: 20}
+/drone1/gnss/home: {reliability: reliable, durability: transient_local, history: keep_last, depth: 1}
+/drone1/localization/odometry: {reliability: best_effort, durability: volatile, history: keep_last, depth: 100}
+/drone1/localization/vio/odometry: {reliability: best_effort, durability: volatile, history: keep_last, depth: 20}
+/drone1/ground_truth/local_odometry: {reliability: best_effort, durability: volatile, history: keep_last, depth: 40}
 /drone1/gnss/raw_observations: {reliability: best_effort, durability: volatile, history: keep_last, depth: 20}
 /drone1/five_ga/observations: {reliability: best_effort, durability: volatile, history: keep_last, depth: 20}
 /drone1/ground_truth/odometry: {reliability: best_effort, durability: volatile, history: keep_last, depth: 20}

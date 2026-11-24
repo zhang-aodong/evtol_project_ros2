@@ -14,6 +14,10 @@ import numpy as np
 
 LosChecker = Callable[[np.ndarray, np.ndarray], bool]
 
+# Times are simulation seconds since this radio stream's first acquisition.
+_D1_OUTAGES = {"gNB6": (20., 55.), "gNB3": (55., 75.), "gNB5": (35., 43.)}
+_D1_NLOS = {"gNB2": (30., 46., 0.), "gNB4": (60., 76., 1.)}
+
 
 @dataclass(frozen=True)
 class FiveGAState:
@@ -57,11 +61,21 @@ class FiveGASimulator:
         settings: dict[str, Any],
         los_checker: LosChecker | None = None,
         cache_los: bool = True,
+        *,
+        profile: str = "native",
+        added_sigma_m: float = 1.2,
     ) -> None:
         self.settings = settings
         self.los_checker = los_checker
         self.cache_los = cache_los
         self.rng = np.random.default_rng(int(settings["random_seed"]))
+        if profile not in ("native", "moderate"):
+            raise ValueError(f"Unknown 5G-A profile: {profile}")
+        self.added_sigma_m = float(added_sigma_m)
+        if profile == "moderate" and (not np.isfinite(self.added_sigma_m) or self.added_sigma_m < 0):
+            raise ValueError("Added 5G-A range standard deviation must be finite and nonnegative")
+        # Keep the native random stream identical across paired comparisons.
+        self.stress_rng = np.random.default_rng(20260910) if profile == "moderate" else None
         self._los_cache: dict[str, tuple[float, bool]] = {}
         self.stations = [
             (
@@ -154,15 +168,35 @@ class FiveGASimulator:
                     ),
                 )
             range_noise_m = float(self.rng.normal(0.0, effective_sigma_m))
-            measured_range_m = max(
-                true_range_m + nlos_bias_m + range_noise_m,
-                float(self.settings["min_measured_range_m"]),
-            )
+            measured_range_m = true_range_m + nlos_bias_m + range_noise_m
+        if self.stress_rng is not None:
+            # The D1 schedule overlays the ray-traced scene. A scheduled NLOS
+            # event retains any native scene loss and bias and adds its own.
+            t = state.elapsed_s
+            outage = _D1_OUTAGES.get(gnb_id)
+            if outage and outage[0] <= t < outage[1]:
+                measurement_valid = 0
+            nlos = _D1_NLOS.get(gnb_id)
+            if nlos and nlos[0] <= t < nlos[1]:
+                bias = 3.0 + np.sin(2.0 * np.pi * t / 8.0 + nlos[2])
+                measured_range_m += bias
+                nlos_bias_m += bias
+                path_loss_db += 5.0
+                prs_rsrp_dbm -= 5.0
+                is_los = False
+                if prs_rsrp_dbm < float(self.settings["min_rsrp_dbm"]):
+                    measurement_valid = 0
+            effective_sigma_m = float(np.hypot(effective_sigma_m, self.added_sigma_m))
+            measured_range_m += self.stress_rng.normal(0.0, self.added_sigma_m)
+        if measurement_valid:
+            measured_range_m = max(measured_range_m, float(self.settings["min_measured_range_m"]))
             measured_rtt_s = (
                 2.0
                 * measured_range_m
                 / float(self.settings["speed_of_light_mps"])
             )
+        else:
+            measured_range_m = np.nan
         return LinkObservation(
             sample_index=state.sample_index,
             timestamp_ns=state.timestamp_ns,

@@ -20,6 +20,9 @@ def processes(context):
         ('gateway','evtol_safety.gateway',['--execute'] if execute else [])]
     import yaml
     settings=yaml.safe_load(Path(config).read_text(encoding='utf-8-sig'))
+    if settings.get('localization', {}).get('enabled'):
+        from evtol_localization.settings import estimator_module
+        specs.append(('ego_localization', estimator_module(settings), []))
     if settings.get('surround',{}).get('enabled',False):
         detect=settings['model'].get('task')=='detect'
         if detect or not settings['surround'].get('front_diagnostic_inference',False):specs=[s for s in specs if s[0]!='vision']
