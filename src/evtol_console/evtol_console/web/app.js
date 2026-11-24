@@ -47,9 +47,10 @@ export function mountConsole(host, transport) {
   <div class="card"><h2>自机多源融合定位</h2><div class="row">
   <label class="check"><input type="checkbox" data-bind="localization.enabled">启用自机定位</label>
   <label>在线模式<select data-bind="localization.mode"><option value="gnss_imu">GNSS + IMU</option><option value="gnss_imu_5g">GNSS + IMU + 逐站 5G-A</option></select></label>
+  <label>定位实现<select data-bind="localization.estimator"><option value="legacy">现有定位器（默认）</option><option value="absolute">新增绝对定位器</option></select></label>
   <label>下游状态来源<select data-bind="localization.state_source"><option value="truth">真值控制，融合旁路评价</option><option value="fused">融合定位控制</option></select></label>
   <label class="check"><input type="checkbox" data-bind="localization.evaluate">独立真值误差评价</label></div>
-  <p>坐标为会话 ENU，原点来自统一会话约定。滤波器只消费 IMU、GNSS 和可选 5G-A，不消费真值位姿。第一版航向初始化依赖仿真 IMU 的有效姿态；Camera+IMU 留作后续。定位开启后重新启动 ROS 生效。</p>
+  <p>坐标为会话 ENU，原点来自统一会话约定。滤波器只消费 IMU、GNSS 和可选 5G-A，不消费真值位姿。航向初始化依赖仿真 IMU 的有效姿态。两套绝对定位器均支持本页断星时段、轨迹和误差曲线，运行时只启动一套。排序等待和本行噪声参数适用于默认定位器；新增实现使用配置 localization.absolute。Camera+IMU 通过命令行启用，输出独立局部 VIO 话题，不能直接接管 ENU 控制。修改后重启 ROS 生效。</p>
   <div class="row"><label>排序等待 s<input type="number" step="0.01" data-bind="localization.reorder_s"></label><label>状态过期 s<input type="number" step="0.01" data-bind="localization.stale_s"></label><label>GNSS 标准差下限 m<input type="number" step="0.05" data-bind="localization.gnss_sigma_floor_m"></label><label>5G 标准差下限 m<input type="number" step="0.05" data-bind="localization.fiveg_sigma_floor_m"></label><label>5G 最低 RSRP dBm<input type="number" data-bind="localization.fiveg_min_rsrp_dbm"></label></div>
   </div><div class="card"><h2>飞行中卫星异常与恢复</h2>
   <div class="row"><label class="check"><input type="checkbox" data-bind="localization.gnss_fault.enabled">启用 GNSS 异常测试</label><label>时间基准<select data-bind="localization.gnss_fault.time_base"><option value="flight">本次飞行进入起飞阶段</option><option value="session">会话原点时刻（适合离线回放）</option></select></label><label>未列出时段<select data-bind="localization.gnss_fault.default_mode"><option value="normal">正常</option><option value="dropout">中断</option></select></label></div>

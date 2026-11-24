@@ -15,5 +15,6 @@ $qosFile = Join-Path $projectRoot 'src\evtol_bringup\config\bag_qos.yaml'
   /drone1/localization/odometry /drone1/localization/status /drone1/localization/metrics `
   /drone1/localization/error_enu /drone1/localization/error_3d `
   /drone1/localization/path /drone1/localization/truth_path /drone1/control/flight_status `
+  /drone1/gnss/home /drone1/localization/vio/odometry `
   /drone1/navigation/waypoint_path /drone1/navigation/traveled_path
 if ($LASTEXITCODE -ne 0) { throw 'rosbag2 recording failed.' }

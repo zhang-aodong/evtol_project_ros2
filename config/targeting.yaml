@@ -277,6 +277,11 @@ warnings:
   target_success_rate: 0.9
 localization:
   enabled: true
+  estimator: legacy
+  fix_profile: native
+  fiveg_profile: native
+  absolute: {}
+  vio: {}
   mode: gnss_imu
   state_source: truth
   evaluate: true

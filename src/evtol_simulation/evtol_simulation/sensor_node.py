@@ -9,7 +9,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.clock import Clock as RclClock, ClockType
-from rclpy.qos import qos_profile_sensor_data, QoSProfile, ReliabilityPolicy
+from rclpy.qos import qos_profile_sensor_data, QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from builtin_interfaces.msg import Time
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image, CameraInfo, Imu, NavSatFix, NavSatStatus, PointCloud2, PointField
@@ -23,6 +23,7 @@ from .configuration import load, KINDS
 from .backend import AirSimBackend, MockBackend
 from .coordinates import NED_ENU, FRD_FLU, vector, orientation, extrinsic, quaternion_matrix
 from .gnss_model import GnssRawSimulator, geodetic_to_ecef, ned_to_ecef_delta
+from .fix_error import StandaloneFixError, fix_fields
 from .radio_model import FiveGASimulator, FiveGAState
 from .runtime import TimerResolution, RateGate, SensorLease, AcquisitionWait
 from .semantic import SemanticDecoder
@@ -73,6 +74,20 @@ class SensorNode(Node):
         self.backend = None
         self.gnss_model = None
         self.radio_model = None
+        localization = config.get('localization', {})
+        self.localization = localization if localization.get('enabled', False) else {}
+        self.fix_error = None
+        self.home_pub = None
+        self.home_published = False
+        if kind == 'gnss' and self.localization:
+            fix_profile = self.localization.get('fix_profile', 'native')
+            if fix_profile == 'standalone':
+                self.fix_error = StandaloneFixError()
+            elif fix_profile != 'native':
+                raise ValueError(f'Unknown GNSS fix profile: {fix_profile}')
+            self.home_pub = self.create_publisher(NavSatFix, self.prefix + '/gnss/home',
+                QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
+                           durability=DurabilityPolicy.TRANSIENT_LOCAL))
         self.rate_gate = RateGate(config['rates']['imu'], recover_phase=True) if kind == 'imu' and config['backend'] == 'airsim' else None
         self.base = self.frames['base']
         if kind == 'truth':
@@ -252,19 +267,25 @@ class SensorNode(Node):
     def emit_gnss(self, ns, data):
         if not self.geodetic_sent:
             home = self.backend.home()
+            coords = [float(home[k]) for k in ('latitude', 'longitude', 'altitude')]
+            if not np.all(np.isfinite(coords)) or abs(coords[0]) > 90 or abs(coords[1]) > 180:
+                raise ValueError('Invalid map geodetic origin from backend')
             datum = NavSatFix(header=header(ns, self.frames['world']), latitude=float(home['latitude']),
                 longitude=float(home['longitude']), altitude=float(home['altitude']))
             datum.status.status = NavSatStatus.STATUS_FIX
+            datum.status.service = NavSatStatus.SERVICE_GPS
             self.geodetic_pub.publish(datum)
+            if self.home_pub is not None:
+                self.home_pub.publish(datum)
+                self.home_published = True
             self.geodetic_sent = True
-        gps = data['gnss']
-        geo = gps['geo_point']
-        msg = NavSatFix(header=header(ns, self.frames['gnss']),
-            latitude=float(geo['latitude']), longitude=float(geo['longitude']), altitude=float(geo['altitude']))
-        msg.status.status = NavSatStatus.STATUS_FIX if gps['fix_type'] >= 2 else NavSatStatus.STATUS_NO_FIX
+        coordinates, valid, covariance = fix_fields(data['gnss'], ns, self.fix_error)
+        msg = NavSatFix(header=header(ns, self.frames['gnss']), latitude=coordinates[0],
+                        longitude=coordinates[1], altitude=coordinates[2])
+        msg.status.status = NavSatStatus.STATUS_FIX if valid else NavSatStatus.STATUS_NO_FIX
         msg.status.service = NavSatStatus.SERVICE_GPS
         # AirSim EPH/EPV fields are exposed as approximate horizontal/vertical accuracy.
-        msg.position_covariance = [float(gps['eph'])**2,0.,0.,0.,float(gps['eph'])**2,0.,0.,0.,float(gps['epv'])**2]
+        msg.position_covariance = covariance
         msg.position_covariance_type = NavSatFix.COVARIANCE_TYPE_APPROXIMATED
         self.publish('gnss/fix', msg)
         if self.c['source']['gnss_raw']['enabled']:
@@ -302,7 +323,9 @@ class SensorNode(Node):
         if self.radio_model is None:
             los = self.backend.line_of_sight if settings['los']['enabled'] else None
             self.radio_model = FiveGASimulator(settings, los,
-                cache_los=not bool(getattr(self.backend, 'los_cache', None)))
+                cache_los=not bool(getattr(self.backend, 'los_cache', None)),
+                profile=self.localization.get('fiveg_profile', 'native'),
+                added_sigma_m=self.localization.get('fiveg_added_sigma_m', 1.2))
         state = FiveGAState(self.count, ns, 0. if not self.first_stamp else (ns-self.first_stamp)*1e-9,
                             'simulation', vector(data['position']), vector(data['linear_velocity']))
         msg = FiveGObservations(header=header(ns, self.frames['world']), sequence=self.count, synthetic=True)
