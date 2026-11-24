@@ -184,6 +184,37 @@ class ConfigurationContracts(unittest.TestCase):
                 self.assertTrue(engine.telemetry['runtime_fault']['hold_requested'])
                 self.assertEqual(engine.telemetry['runtime_fault']['failed'],['safety'])
         finally:engine.processes={}
+
+    def test_evaluation_or_visualization_exit_does_not_hold_or_stop_flight(self):
+        from types import SimpleNamespace
+        engine=Engine(self.root);self.addCleanup(engine.close)
+        engine.config['run']['execute']=True;engine.telemetry['flight']=dict(phase='flying')
+        process=lambda code:SimpleNamespace(process=SimpleNamespace(poll=lambda:code))
+        engine.processes=dict(ego_localization_evaluation=process(1),ue_boxes=process(1),gateway=process(None),safety=process(None))
+        try:
+            with patch.object(engine,'rpc') as rpc,patch.object(engine,'stop_ros') as cleanup,patch.object(engine,'ros_stop') as hold:
+                rpc.return_value.call.return_value=True
+                engine.last_health=0.;engine.monitor();engine.last_health=0.;engine.monitor()
+                cleanup.assert_not_called();hold.assert_not_called()
+                self.assertNotIn('runtime_fault',engine.telemetry)
+                self.assertEqual(engine.telemetry['runtime_warnings']['failed'],['ego_localization_evaluation','ue_boxes'])
+                self.assertEqual(sum('Noncritical nodes exited' in e['message'] for e in engine.logs),1)
+        finally:engine.processes={}
+
+    def test_node_criticality_follows_run_state_source_and_unknown_nodes_fail_closed(self):
+        engine=Engine(self.root);self.addCleanup(engine.close)
+        engine.runtime_config=dict(state=dict(source='truth'),navigation_lidar=dict(enabled=True),localization=dict(mode='gnss_imu'))
+        self.assertFalse(engine.flight_critical('ego_localization'))
+        self.assertFalse(engine.flight_critical('lidar_sensor'))
+        self.assertFalse(engine.flight_critical('gnss_sensor'))
+        self.assertTrue(engine.flight_critical('navigation_lidar'))
+        self.assertTrue(engine.flight_critical('unknown_new_algorithm'))
+        engine.runtime_config['state']['source']='fused'
+        self.assertTrue(engine.flight_critical('ego_localization'))
+        self.assertTrue(engine.flight_critical('imu_sensor'))
+        self.assertFalse(engine.flight_critical('radio_sensor'))
+        engine.runtime_config['localization']['mode']='gnss_imu_5g'
+        self.assertTrue(engine.flight_critical('radio_sensor'))
     def test_windows_ros_diagnostic_byte_level_is_json_serializable(self):
         import sys
         from types import SimpleNamespace

@@ -8,13 +8,16 @@ from scipy.spatial import cKDTree
 
 
 def _worker(requests,results,settings):
-    planner=HorizontalFirstNavigator(settings) if settings.get('strategy')=='horizontal_first_astar' else VoxelNavigator(settings)
+    planner_type=HorizontalFirstNavigator if settings.get('strategy')=='horizontal_first_astar' else VoxelNavigator
+    planners={}
     try:
         while True:
             request=requests.get()
             if request is None:return
-            version,p,goal,points,submitted=request
+            version,p,goal,points,submitted,radius=request
             try:
+                if radius not in planners:planners[radius]=planner_type(dict(settings,planning_radius_m=radius))
+                planner=planners[radius]
                 planner.plan(p,goal,points)
                 results.put((version,goal,planner.path,planner.reason,submitted))
             except Exception as exc:results.put((version,goal,[],str(exc),submitted))
@@ -28,6 +31,12 @@ class AsyncNavigator:
         self.version=0;self.active=0;self.received=0.;self.goal=None
         self.ttl=float(settings.get('route_timeout_s',.75))
         self.last_submit=0.
+        self.radius=float(settings.get('planning_radius_m',6.))
+
+    def set_radius(self,radius):
+        radius=float(radius)
+        if abs(radius-self.radius)>1e-6:
+            self.radius=radius;self.suspend()
 
     def _start(self):
         ctx=mp.get_context('spawn');self.requests=ctx.Queue(maxsize=1);self.results=ctx.Queue(maxsize=1)
@@ -84,7 +93,7 @@ class AsyncNavigator:
             self.path=[p.copy(),goal.copy()];self.reason='sampled_corridor_clear'
             return aim(goal)
         if self.process is None:self._start()
-        self.pending=(self.version,p.copy(),goal.copy(),points.copy(),now)
+        self.pending=(self.version,p.copy(),goal.copy(),points.copy(),now,self.radius)
         if not self.busy and now-self.last_submit>=float(self.settings.get('replan_period_s',.5)):
             try:
                 self.requests.put_nowait(self.pending);self.active=self.version;self.busy=True

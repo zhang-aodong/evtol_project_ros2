@@ -25,6 +25,7 @@ from .async_navigation import AsyncNavigator
 from .corridor import local_points,near_obstacles,route_aim
 from .layers import emergency_points,fused_route_points,descent_limit,hold_velocity
 from .raw_emergency import RawLidarEmergency
+from .recovery import RouteRecovery
 
 
 def closest_approach(relative_position,relative_velocity,horizon):
@@ -43,6 +44,7 @@ class SafetyNode(Node):
         synchronous=HorizontalFirstNavigator if nav.get('strategy')=='horizontal_first_astar' else VoxelNavigator
         self.navigator=(AsyncNavigator if nav.get('async_planning',True) else synchronous)(nav)
         self.reference=SampledLeg(nav)
+        self.recovery=RouteRecovery(nav);self.last_recovery_reason='normal'
         self.dynamic={**DYNAMIC_DEFAULTS,**c['safety'].get('dynamic',{})};self.last_risks=0.
         self.tracks_wall=None
         self.lidar_tracks=None;self.lidar_tracks_wall=None
@@ -103,6 +105,7 @@ class SafetyNode(Node):
             self.emergency_mode=False
             self.mission=make_mission(self.c['mission']);self.aim=None;self.last_plan=0.
             self.reference.reset();self.plan_goal=None
+            self.recovery.reset()
             self.local_goal=None;self.plan_count=0
             self.state_valid=False
             if hasattr(self.navigator,'close'):self.navigator.close()
@@ -239,6 +242,7 @@ class SafetyNode(Node):
                 else:self.navigator.path=[]
                 self.path_pub.publish(Path(header=header(now)))
                 if emergency:
+                    self.recovery.pause()
                     self.emergency_height=float(p[2])
                     # A queued landing handoff must be earned again after
                     # evasion; it cannot survive movement away from touchdown.
@@ -270,6 +274,13 @@ class SafetyNode(Node):
                 else:target,phase=self.mission.reference(p,velocity,wall,flight)
                 self.goal_index=self.mission.index
                 distance=float(np.linalg.norm(target-p))
+                if phase=='waypoint' and not emergency and flight=='flying':
+                    anchor=self.reference.anchor if self.reference.key==(phase,self.mission.index) else p
+                    direction=target-anchor;direction=direction/max(np.linalg.norm(direction),1e-9)
+                    blocked=self.status_reason in ('goal_obstructed','no_local_route','planning_budget_exceeded',
+                        'dynamic_no_safe_candidate','fused_dynamic_avoidance','dynamic_evasive_velocity','avoidance')
+                    self.recovery.observe(p,target,(phase,self.mission.index),float((p-anchor)@direction),wall,blocked=blocked)
+                elif not emergency:self.recovery.pause()
                 if phase=='takeoff':
                     # During a non-descending takeoff, the observed support
                     # below the starting floor cannot intersect an executable
@@ -285,18 +296,32 @@ class SafetyNode(Node):
                         self.plan_goal=target.copy()
                     sampled=self.c['mission'].get('mode','waypoints')=='waypoints' and phase=='waypoint'
                     if wall-self.last_plan>=self.c['navigation']['replan_period_s']:
+                        planning_radius=self.recovery.radius if self.recovery.active else self.c['navigation']['planning_radius_m']
+                        if hasattr(self.navigator,'set_radius'):self.navigator.set_radius(planning_radius)
                         # Normal airborne navigation uses visual/LiDAR fused
                         # detections. Raw points belong to the emergency layer.
                         route_world=np.empty((0,3)) if raw_armed and self.raw_guard.o['enabled'] else world
-                        route_points=local_points(route_world,p,self.c['navigation']['planning_radius_m'])
+                        route_points=local_points(route_world,p,planning_radius)
                         if (self.dynamic['enabled'] and self.tracks is not None and self.tracks_wall is not None
                                 and wall-self.tracks_wall<=self.dynamic['max_age_s']
                                 and 0<=(now-ns(self.tracks.image_stamp))*1e-9<=self.dynamic['max_age_s']):
                             predicted,_=from_targets(self.tracks.targets,ns(self.tracks.header.stamp),now,p,self.dynamic)
-                            predicted=near_obstacles(predicted,velocity,self.c['navigation']['planning_radius_m'],self.dynamic['horizon_s'])
+                            predicted=near_obstacles(predicted,velocity,planning_radius,self.dynamic['horizon_s'])
                             cloud=fused_route_points(predicted,p,self.dynamic['horizon_s'])
                             if len(cloud):route_points=np.vstack((route_points,cloud))
                         self.local_goal=self.reference.reference(p,target,(phase,self.mission.index),route_points) if sampled else target.copy()
+                        if sampled:
+                            floor=max(self.c['mission'].get('landing_ground_z_m',0.)+self.planner.clearance,
+                                min(float(self.reference.anchor[2]),float(target[2]))-.4)
+                            self.local_goal=self.recovery.reference(p,target,self.local_goal,route_points,wall,floor)
+                        self.safety_data['recovery']=self.recovery.status()
+                        if self.recovery.reason!=self.last_recovery_reason:
+                            self.get_logger().info('Route recovery: '+self.recovery.reason)
+                            self.last_recovery_reason=self.recovery.reason
+                        if self.local_goal is None:
+                            self.navigator.path=[];self.navigator.reason='blocked_no_recovery_goal';self.aim=None;self.last_plan=wall
+                            self.path_pub.publish(Path(header=header(now)))
+                            raise ValueError('blocked_no_recovery_goal')
                         self.aim=self.navigator.plan(p,self.local_goal,route_points)
                         self.plan_count+=1
                         self.last_plan=wall
@@ -317,8 +342,9 @@ class SafetyNode(Node):
                         fused_avoidance_radius_m=self.c['safety'].get('fused_avoidance_radius_m',4.),raw_nearby_returns=len(relative),
                         ground_endpoint_hold=bool(getattr(self.mission,'ground_hold',False)),
                         dynamic_horizon_s=self.dynamic['horizon_s'])
+                    self.safety_data['recovery']=self.recovery.status()
                     if self.aim is None:
-                        if raw_obstacles or (isinstance(self.navigator,AsyncNavigator) and phase=='waypoint' and self.navigator.reason!='goal_obstructed'):
+                        if raw_obstacles or (not self.recovery.active and isinstance(self.navigator,AsyncNavigator) and phase=='waypoint' and self.navigator.reason!='goal_obstructed'):
                             # Waiting for an expensive detour is not itself a
                             # reason to reset the velocity ramp. Use the local
                             # sample heading as a preference; the unchanged
@@ -460,6 +486,8 @@ class SafetyNode(Node):
                     safe[:]=0.;reason='mission_'+phase;self.planner.reset()
             put(command.velocity,safe);command.reason=reason;risk.reason=reason;self.health.ok()
         except Exception as exc:
+            if any(text in str(exc) for text in ('stale','invalid','age exceeds','acquisition-time','Empty LiDAR','complete navigation LiDAR')):
+                self.recovery.history.clear()
             self.navigation_ready_since=None
             self.safety_data['lidar_emergency']=dict(self.raw_guard.diagnostics,reason='safety_hold',action=str(exc))
             risk.valid=False
@@ -481,6 +509,7 @@ class SafetyNode(Node):
         return super().destroy_node()
 
     def publish_mission(self,now,phase,reason,target):
+        self.safety_data['recovery']=self.recovery.status()
         value=dict(session_id=self.origin.session_id,stamp_ns=now,phase=phase,waypoint_index=self.goal_index,
             waypoint_count=len(self.c['mission']['waypoints_enu_m']),reason=reason,target_enu_m=np.asarray(target).tolist(),
             planning=self.navigator.reason,flight_mode=self.c['mission'].get('mode','waypoints'),

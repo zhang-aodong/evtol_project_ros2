@@ -86,6 +86,9 @@ class VoxelNavigator:
             self.move_cost=np.linalg.norm(self.moves,axis=1)*self.res
         self.move_cost+=abs(self.moves[:,2])*self.res*float(settings.get('vertical_cost',1.5))
 
+    def set_radius(self,radius):
+        if abs(self.radius-radius)>1e-6:self.radius=float(radius);self.path=[];self.path_goal=None
+
     def plan(self,start,goal,points):
         start=np.asarray(start,float);goal=np.asarray(goal,float);points=np.asarray(points,float).reshape(-1,3)
         points=points[np.isfinite(points).all(axis=1)]
@@ -182,6 +185,10 @@ class HorizontalFirstNavigator:
         self.horizontal=VoxelNavigator(dict(settings,horizontal_only=True,search_budget_s=budget*.4))
         self.spatial=VoxelNavigator(dict(settings,horizontal_only=False,search_budget_s=budget*.6))
         self.path=[];self.reason='waiting';self.settings=settings
+
+    def set_radius(self,radius):
+        if abs(self.horizontal.radius-radius)>1e-6:
+            self.horizontal.set_radius(radius);self.spatial.set_radius(radius);self.path=[]
 
     def plan(self,p,goal,points):
         if abs(goal[2]-p[2])<=self.horizontal.res*.5:

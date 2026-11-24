@@ -136,6 +136,18 @@ try {
   state.telemetry.mission={safety_data:{lidar_emergency:{armed:true,active:true,nearest_m:1.25,max_closing_mps:1.5,cells:2,action:'lidar_emergency_escape'}}};
   await wait(300);assert.match($('#raw-emergency-status').textContent,/1.25/);
   assert.match($('#raw-emergency-status').textContent,/lidar_emergency_escape/);
+  state.telemetry.flight={phase:'flying'};
+  state.telemetry.runtime_warnings={failed:['ego_localization_evaluation'],reason:'optional evaluation unavailable'};
+  state.telemetry.mission.safety_data.recovery={active:true,reason:'temporary_goal',radius_m:10};
+  await wait(300);
+  assert.match($('#summary').textContent,/flying/);
+  assert.match($('#summary').textContent,/ego_localization_evaluation/);
+  assert.match($('#perception-health').textContent,/temporary_goal/);
+  state.telemetry.flight.phase='failsafe_hold';
+  state.telemetry.runtime_fault={reason:'critical state fault'};
+  await wait(300);
+  assert.match($('#summary').textContent,/failsafe_hold/);
+  assert.match($('#summary').textContent,/critical state fault/);
   state.telemetry.mission_received_wall=0;await wait(300);
   assert.doesNotMatch($('#raw-emergency-status').textContent,/1.25/);
   $('[data-tab="collection"]').click();$('#collect-refresh').click();await wait(25);

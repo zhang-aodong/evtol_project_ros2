@@ -24,7 +24,7 @@ def main():
     p.add_argument('--height',type=float,default=8.)
     p.add_argument('--root',type=Path)
     p.add_argument('--side-speed',type=float,default=.8)
-    p.add_argument('--case',choices=['straight','turns','ground_hold','crossing','raw_emergency','raw_side','raw_resume','watchdog'],default='straight')
+    p.add_argument('--case',choices=['straight','turns','ground_hold','crossing','raw_emergency','raw_side','raw_resume','watchdog','optional_failure','blocked_sample'],default='straight')
     a=p.parse_args();root=a.root.resolve() if a.root else Path(__file__).resolve().parents[1]
     cfg=root/'config/console.local.json';original_hash=hashlib.sha256(cfg.read_bytes()).hexdigest()
     origin=root/'data/session_origin.json';original_origin=origin.read_bytes() if origin.exists() else None
@@ -37,6 +37,14 @@ def main():
     engine.config['run'].update(execute=True,actors=False,evaluate=False,new_session=True)
     engine.config['ue']['visible']=False
     if a.case=='watchdog':engine.config['mission']['waypoints_enu_m']=[[0.,0.,a.height]]
+    if a.case=='optional_failure':
+        engine.config['mission']['waypoints_enu_m']=[[0.,0.,a.height],[0.,80.,a.height]]
+        engine.config['localization'].update(enabled=True,evaluate=True,state_source='truth')
+    if a.case=='blocked_sample':
+        engine.config['mission']['waypoints_enu_m']=[[0.,0.,a.height],[0.,12.,a.height]]
+        engine.config['actors'].update(count=1,agents=[dict(name='Drone2',speed_mps=.8,spawn_ned_m=[5.,0.,0.],
+            waypoints_enu_m=[[0.,5.,a.height],[0.,5.,a.height]],repeat=0)],initialization='first_waypoint')
+        engine.config['run'].update(actors=True,evaluate=True)
     if a.case=='turns':engine.config['mission']['waypoints_enu_m']=[[0,0,a.height],[0,12,a.height],[8,12,a.height],[8,4,a.height]]
     if a.case=='ground_hold':engine.config['mission']['waypoints_enu_m']=[[0,0,a.height],[0,12,a.height],[0,12,0]]
     if a.case=='raw_emergency':
@@ -91,12 +99,17 @@ def main():
             status=engine.status();telemetry=status['telemetry']
             row=json.loads(json.dumps(dict(wall=time.time(),**latest,mission=telemetry.get('mission'),
                 flight=telemetry.get('flight'),runtime_fault=telemetry.get('runtime_fault'),
+                runtime_warnings=telemetry.get('runtime_warnings'),
                 actors=telemetry.get('actors') if a.case in ('raw_side','raw_resume') else None)))
             rows.append(row)
             if a.case=='watchdog' and fault_injected is None and (row.get('mission') or {}).get('phase')=='complete':
                 fault_injected=time.time()
                 engine.processes['safety'].stop()
                 print('Injected exit of test-owned safety node',flush=True)
+            if a.case=='optional_failure' and fault_injected is None and row.get('position',[0,0,0])[1]>15.:
+                fault_injected=time.time()
+                engine.processes['ego_localization_evaluation'].stop()
+                print('Injected exit of test-owned optional evaluation node',flush=True)
             if time.monotonic()-last_check>1.:
                 last_check=time.monotonic();rpc=engine.rpc(1.)
                 try:
@@ -138,6 +151,16 @@ def main():
             maximum_stopped=max(maximum_stopped,stopped)
         result['longest_stationary_waypoint_s']=maximum_stopped
         result['collision_records_raw']=list(collisions)
+        if a.case=='optional_failure':
+            held=any((r.get('flight') or {}).get('phase')=='failsafe_hold' for r in rows)
+            warned=any('ego_localization_evaluation' in (r.get('runtime_warnings') or {}).get('failed',[]) for r in rows)
+            result['optional_failure']=dict(injected=fault_injected,failsafe_held=held,warning_reported=warned)
+            if fault_injected is None or held or not warned or not result['completed']:
+                result['error']=error='Optional node exit interrupted mission or was not reported'
+        if a.case=='blocked_sample':
+            recoveries=[r['mission']['safety_data']['recovery'] for r in rows if (r.get('mission') or {}).get('safety_data',{}).get('recovery',{}).get('active')]
+            result['recovery']=dict(active_samples=len(recoveries),max_radius_m=max((r['radius_m'] for r in recoveries),default=6.))
+            if not result['completed']:result['error']=error='Obstructed-flight mission did not reach its original destination'
         if a.case=='watchdog':
             held=[r for r in rows if fault_injected is not None and r['wall']>fault_injected+3. and r.get('position')]
             heights=[r['position'][2] for r in held]
@@ -154,6 +177,8 @@ def main():
                 result['airborne_collisions']=[v for v in collisions if v['collision']['time_stamp']>=takeoff_ns]
                 result['spawn_contacts_before_takeoff']=[v for v in collisions if v['collision']['time_stamp']<takeoff_ns]
                 result['takeoff_stamp_ns']=takeoff_ns
+        if a.case in ('optional_failure','blocked_sample') and result['airborne_collisions']:
+            result['error']=error='Collision during recovery/fault isolation verification'
         if a.case in ('raw_side','raw_resume'):
             guard_states=[(row.get('mission') or {}).get('safety_data',{}).get('lidar_emergency',{}) for row in rows]
             active=[state for state in guard_states if state.get('active')]

@@ -14,13 +14,14 @@ from evtol_targeting.common import args_config,ns,xyz,put,header,clone,LATCHED,p
 from .node import SENSOR_QOS
 from .options import options,fault_at
 from .evaluation import ErrorAudit
+from .storage import EvaluationStorage
 
 
 class EvaluationNode(Node):
     def __init__(self,c):
         super().__init__('ego_localization_evaluation');self.c=c;self.o=options(c.get('localization'))
         root='/'+c['namespace'];self.audit=ErrorAudit();self.origin=None;self.status={};self.base_ns=None
-        self.truth_path=[];self.last_truth_path=0;self.last_saved=0;self.folder=None;self.file=None
+        self.truth_path=[];self.last_truth_path=0;self.last_saved=0;self.folder=None;self.storage=None;self.last_storage_warning=0.
         self.pub=self.create_publisher(String,root+'/localization/metrics',10)
         self.error=self.create_publisher(Vector3Stamped,root+'/localization/error_enu',SENSOR_QOS)
         self.norm=self.create_publisher(Float64,root+'/localization/error_3d',SENSOR_QOS)
@@ -33,10 +34,10 @@ class EvaluationNode(Node):
 
     def reference(self,msg):
         if self.origin and self.origin.session_id==msg.session_id:return
-        if self.file:self.file.close()
+        if self.storage:self.storage.close()
         self.origin=msg;self.audit=ErrorAudit();self.truth_path=[];self.last_truth_path=0;self.last_saved=0;self.status={};self.base_ns=None
         self.folder=project_path(self.c,self.c['evaluation']['output_dir'])/('ego_'+msg.session_id)/self.o['mode']
-        self.folder.mkdir(parents=True,exist_ok=True);self.file=(self.folder/'errors.jsonl').open('w',encoding='utf8')
+        self.storage=EvaluationStorage(self.folder)
         self.truth_pub.publish(NavPath(header=header(ns(msg.header.stamp))))
 
     def estimate(self,msg):
@@ -69,7 +70,7 @@ class EvaluationNode(Node):
         for r in self.audit.drain(now-int(.55e9),self.phase):
             vector=Vector3Stamped(header=header(r['stamp_ns']));put(vector.vector,r['error_enu_m'])
             self.error.publish(vector);self.norm.publish(Float64(data=r['error_3d_m']))
-            if self.file:self.file.write(json.dumps(r,allow_nan=False)+'\n')
+            if self.storage:self.storage.append(r)
         if now-self.last_saved<int(.5e9):return
         self.last_saved=now
         s=self.audit.summary();latest=self.audit.last
@@ -77,11 +78,17 @@ class EvaluationNode(Node):
         report=dict(session_id=self.origin.session_id,origin_stamp_ns=ns(self.origin.header.stamp),stamp_ns=now,valid=fresh,mode=self.o['mode'],
             current=latest,summary=s,estimator=self.status,alignment='session_enu_no_truth_fitting',
             recent_errors=list(reversed(list(islice(reversed(self.audit.rows),60)))),
-            outage_end_errors=self.outage_errors(),recovery_events=self.status.get('recovery_events',[]))
+            outage_end_errors=self.outage_errors(),recovery_events=self.status.get('recovery_events',[]),
+            storage=self.storage.status() if self.storage else None)
         self.pub.publish(String(data=json.dumps(report,allow_nan=False)))
-        if self.folder:
-            temp=self.folder/'summary.tmp';temp.write_text(json.dumps(report,indent=2,ensure_ascii=False,allow_nan=False),encoding='utf8');temp.replace(self.folder/'summary.json')
-            if self.file:self.file.flush()
+        if self.storage:
+            was_failed=self.storage.error is not None
+            saved=self.storage.save(report)
+            wall=time.monotonic()
+            if self.storage.error and wall-self.last_storage_warning>=5.:
+                self.get_logger().warning('Evaluation storage unavailable; live error topics continue: '+self.storage.error)
+                self.last_storage_warning=wall
+            elif saved and was_failed:self.get_logger().info('Evaluation storage recovered')
 
     def outage_errors(self):
         if self.base_ns is None:return []
@@ -96,7 +103,7 @@ class EvaluationNode(Node):
         return result
 
     def destroy_node(self):
-        if self.file:self.file.close()
+        if self.storage:self.storage.close()
         return super().destroy_node()
 
 

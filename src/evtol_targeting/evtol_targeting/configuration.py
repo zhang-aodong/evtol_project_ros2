@@ -192,6 +192,10 @@ def validate_config(c):
         if not math.isfinite(c['navigation'].get('velocity_damping',.4)) or c['navigation'].get('velocity_damping',.4)<0:
             raise ValueError('Invalid navigation.velocity_damping')
         nav=c['navigation']
+        from evtol_safety.recovery import options as recovery_options
+        nav['recovery']=recovery_options(nav.get('recovery'))
+        if nav['recovery']['max_radius_m']<nav['planning_radius_m'] or nav['recovery']['max_radius_m']>=c['navigation_lidar']['range_m']*.8:
+            raise ValueError('Recovery radius must include the normal radius and stay within sensor range')
         for key,default,lo,hi in [('sample_spacing_m',2.,.25,10.),('tracking_lookahead_m',4.,1.,20.)]:
             value=nav.get(key,default)
             if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value) or not lo<=value<=hi:

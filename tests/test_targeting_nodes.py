@@ -419,6 +419,35 @@ class NodeContracts(unittest.TestCase):
             self.assertGreater(node.pub.messages[-1].velocity.z,0.)
         finally:node.destroy_node()
 
+    def test_stalled_navigation_uses_temporary_goal_without_changing_mission(self):
+        node=self.navigation_node([0.,20.,3.])
+        try:
+            node.tick()
+            node.recovery.key=('waypoint',0)
+            node.recovery.history.clear();node.recovery.history.append((time.perf_counter()-4.,0.,True))
+            node.last_plan=0.
+            node.tick()
+            self.assertTrue(node.safety_data['recovery']['active'])
+            self.assertIsNotNone(node.safety_data['recovery']['temporary_goal_enu_m'])
+            self.assertEqual(node.mission.index,0)
+            np.testing.assert_array_equal(node.mission.points[0],[0,20,3])
+            self.assertTrue(node.risk_pub.messages[-1].valid)
+        finally:node.destroy_node()
+
+    def test_no_recovery_goal_retries_at_planning_rate_instead_of_control_rate(self):
+        node=self.navigation_node([0.,20.,3.])
+        try:
+            node.tick();node.recovery.active=True;node.last_plan=0.
+            node.recovery.reason='blocked_no_recovery_goal'
+            with patch.object(node.recovery,'reference',return_value=None) as choose:
+                node.tick();node.tick();node.tick()
+                self.assertEqual(choose.call_count,1)
+            cmd=node.pub.messages[-1]
+            self.assertEqual(cmd.reason,'blocked_no_recovery_goal')
+            self.assertEqual(cmd.velocity.x,0.);self.assertEqual(cmd.velocity.y,0.)
+            self.assertEqual(node.mission.index,0)
+        finally:node.destroy_node()
+
     def test_gateway_refuses_disarm_if_land_returns_above_ground(self):
         self.gateway_flight(True)
 

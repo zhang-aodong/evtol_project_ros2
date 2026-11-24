@@ -131,6 +131,17 @@ navigation:
   sample_spacing_m: 2.0
   tracking_lookahead_m: 3.0
   max_reference_samples: 10000
+  recovery:
+    enabled: true
+    stalled_s: 3.0
+    min_progress_m: 0.5
+    arrival_exclusion_m: 1.0
+    attempt_s: 6.0
+    max_radius_m: 15.0
+    radius_step_m: 4.0
+    goal_tolerance_m: 0.6
+    max_vertical_offset_m: 2.0
+    switch_hold_s: 2.0
 safety:
   raw_emergency:
     enabled: true

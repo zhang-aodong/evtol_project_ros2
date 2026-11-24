@@ -208,7 +208,14 @@ class Engine:
         finally:rpc.close()
         with self.lock:self.airsim_ready=ready
         with self.lock:owned=list(self.processes.items())
-        failed=[k for k,p in owned if k not in ('ue','collection') and p.process.poll() is not None]
+        exited=[k for k,p in owned if k not in ('ue','collection') and p.process.poll() is not None]
+        optional=sorted(k for k in exited if not self.flight_critical(k))
+        previous_optional=self.telemetry.get('runtime_warnings',{}).get('failed',[])
+        if optional!=previous_optional:
+            if optional:self.log('Noncritical nodes exited: '+', '.join(optional)+'; flight continues, inspect their logs',level='WARN')
+            with self.lock:self.telemetry['runtime_warnings']=dict(failed=optional,
+                reason='非关键节点退出，飞行继续；对应评估、显示或记录可能不可用。' if optional else '')
+        failed=sorted(k for k in exited if self.flight_critical(k))
         if failed and any(p.process.poll() is None for k,p in owned if k!='ue'):
             gateway_alive=any(k=='gateway' and p.process.poll() is None for k,p in owned)
             phase=self.telemetry.get('flight',{}).get('phase')
@@ -232,6 +239,20 @@ class Engine:
             except Exception as exc:self.log(exc)
             finally:
                 with self.lock:self.busy=False
+
+    def flight_critical(self,name):
+        # Default unknown nodes to critical. Only explicitly unused/advisory
+        # dependencies may fail without latching control. Use this run's snapshot.
+        c=getattr(self,'runtime_config',None)
+        fused=(c['state']['source']=='fused') if c else self.config.get('localization',{}).get('state_source')=='fused'
+        if name in ('ego_localization_evaluation','evaluation','range_evaluation','target_truth',
+                    'trajectory','ue_boxes','warnings','lidar_obstacles'):return False
+        if name in ('ego_localization','imu_sensor','gnss_sensor','radio_sensor'):
+            if not fused:return False
+            mode=(c.get('localization',{}) if c else self.config.get('localization',{})).get('mode','gnss_imu')
+            return name!='radio_sensor' or '5g' in mode
+        if name=='lidar_sensor' and c and c.get('navigation_lidar',{}).get('enabled'):return False
+        return True
 
     def rpc(self,timeout=1.):
         from .configuration import read_yaml
@@ -299,8 +320,9 @@ class Engine:
     def start_ros(self):
         if any(p.state()['running'] for k,p in self.processes.items() if k!='ue'):raise ValueError('ROS stack is already running')
         with self.lock:
-            self.telemetry.pop('startup',None);self.telemetry.pop('runtime_fault',None)
+            self.telemetry.pop('startup',None);self.telemetry.pop('runtime_fault',None);self.telemetry.pop('runtime_warnings',None)
         d,c,scenario,settings,compiled=artifacts(self.config,self.root)
+        self.runtime_config=copy.deepcopy(c)
         probe=self.rpc(2.)
         try:
             if not probe.call('ping'):raise ValueError('Start UE first')
