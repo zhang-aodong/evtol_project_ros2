@@ -15,3 +15,5 @@ config/machine.local.json
 .algorithm_deps/
 .model_env/
 data/
+/models/onnx_runtime/
+/foxglove/evtol-console/node_modules/
