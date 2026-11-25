@@ -16,6 +16,8 @@ def sensor_config(root, targeting_path):
     simulation = yaml.safe_load(source.read_text(encoding='utf-8-sig'))
     simulation['source_parameters'] = str((source.parent / simulation['source_parameters']).resolve())
     simulation['namespace'] = settings['namespace']
+    if settings.get('localization', {}).get('enabled'):
+        simulation['localization'] = settings['localization']
     simulation['airsim'].update(settings['airsim'])
     surround = settings.get('surround', {})
     if surround.get('enabled', False):

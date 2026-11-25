@@ -9,9 +9,16 @@ from launch.substitutions import LaunchConfiguration
 
 def nodes(context):
     config=LaunchConfiguration('config').perform(context)
+    import yaml
+    from evtol_localization.settings import estimator_module
+    settings=yaml.safe_load(Path(config).read_text(encoding='utf-8-sig'))
+    module=estimator_module(settings)
+    specs=[] if module is None else [('ego_localization',module)]
+    if module and settings['localization']['mode']!='camera_imu' and settings['localization'].get('evaluate',True):
+        specs.append(('ego_localization_evaluation','evtol_localization.evaluation_node'))
     return [ExecuteProcess(name=name,output='both',cmd=[sys.executable,'-u','-m',module,
         '--config',config,'--ros-args','-p','use_sim_time:=true']) for name,module in
-        [('ego_localization','evtol_localization.node'),('ego_localization_evaluation','evtol_localization.evaluation_node')]]
+        specs]
 
 
 def generate_launch_description():

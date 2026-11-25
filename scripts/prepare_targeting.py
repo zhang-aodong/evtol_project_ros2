@@ -17,7 +17,7 @@ if opts.new_session:
         if any('from evtol_targeting.state_node import main' in str(r.get('CommandLine','')) for r in records):
             raise RuntimeError('Stop the active state adapter before resetting the origin')
     origin=Path(c['state']['origin_file'])
-    if not origin.is_absolute():origin=config.parent.parent/origin
+    if not origin.is_absolute():origin=Path(c.get('project_root',config.parent.parent))/origin
     if origin.exists():
         archive=origin.with_name(origin.stem+'.previous.json');origin.replace(archive)
         print('Previous origin archived to',archive)

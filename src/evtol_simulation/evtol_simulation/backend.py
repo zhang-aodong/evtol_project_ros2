@@ -57,8 +57,11 @@ class MockBackend:
             return stamp, dict(orientation=dict(v(), w_val=1.),
                                angular_velocity=v(), linear_acceleration=v(0, 0, -9.81))
         if self.kind == 'gnss':
-            return stamp, dict(gnss=dict(geo_point=dict(latitude=47.641468,
-                longitude=-122.140165, altitude=122.), eph=0.5, epv=0.8, fix_type=3))
+            point = self.home()
+            if self.c.get('localization', {}).get('enabled', False):
+                # The mock radio and kinematics are stationary at NED (0, 0, -10).
+                point['altitude'] += 10.0
+            return stamp, dict(gnss=dict(geo_point=point, eph=0.5, epv=0.8, fix_type=3))
         return stamp, dict(position=v(0, 0, -10), linear_velocity=v(),
                           orientation=dict(v(), w_val=1.), angular_velocity=v())
 

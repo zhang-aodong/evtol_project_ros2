@@ -1,7 +1,9 @@
 """Keep the raw acquisition camera geometry consistent with the perception rig."""
+from copy import deepcopy
 def configure(simulation,targeting):
     s=targeting.get('surround',{})
     simulation['namespace']=targeting['namespace'];simulation['airsim'].update(targeting['airsim'])
+    simulation['localization']=deepcopy(targeting.get('localization',{}))
     if not s.get('enabled',False):return simulation
     simulation['native_kinematics']=True;simulation['rates']['truth']=float(s.get('state_sample_hz',50.))
     camera=simulation['camera'];primary=s['cameras'][0]
