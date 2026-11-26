@@ -1,5 +1,4 @@
 """Algorithm stack only: an existing simulation owns all raw sensor streams."""
-from pathlib import Path
 import sys
 from pathlib import Path
 from ament_index_python.packages import get_package_share_directory
@@ -37,8 +36,11 @@ def processes(context):
             specs.insert(next(i for i,s in enumerate(specs) if s[0]=='safety'),('lidar_obstacles','evtol_targeting.lidar_obstacles',[]))
     localization=settings.get('localization',{})
     if localization.get('enabled',False) or settings['state']['source']=='fused':
-        specs.insert(0,('ego_localization','evtol_localization.node',[]))
-        if localization.get('evaluate',True):specs.append(('ego_localization_evaluation','evtol_localization.evaluation_node',[]))
+        from evtol_localization.settings import estimator_module
+        module=estimator_module(settings)
+        if module:specs.insert(0,('ego_localization',module,[]))
+        if localization.get('evaluate',True) and localization.get('mode')!='camera_imu':
+            specs.append(('ego_localization_evaluation','evtol_localization.evaluation_node',[]))
     if actors:specs.append(('actors','evtol_scenario.actors',[]))
     if evaluate:specs.extend([('target_truth','evtol_targeting.evaluation',['--truth']),('evaluation','evtol_targeting.evaluation',[]),('range_evaluation','evtol_targeting.experiment_node',[])])
     actions=[]

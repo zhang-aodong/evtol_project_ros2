@@ -109,6 +109,7 @@ class AirSimRPC:
         self.buffer = bytearray()
 
     def call(self, method, *args):
+        self.last_method = method
         try:
             if self.sock is None:
                 self.sock = socket.create_connection((self.host, self.port), self.timeout)

@@ -18,7 +18,8 @@ from evtol_perception_interfaces.msg import StateStatus
 from evtol_sim_interfaces.msg import FiveGObservations,FiveGLink
 from evtol_targeting.common import header,stamp,put,LATCHED
 from evtol_targeting.state_node import StateNode
-from evtol_localization.node import LocalizationNode,SENSOR_QOS
+from evtol_localization.absolute_node import AbsoluteNode as LocalizationNode
+from evtol_localization.qos import SENSOR_QOS
 from evtol_localization.evaluation_node import EvaluationNode
 from evtol_localization.options import options
 from evtol_simulation.gnss_model import geodetic_to_ecef,enu_to_ecef_matrix
@@ -38,7 +39,7 @@ class RosContracts(unittest.TestCase):
         temporary=tempfile.TemporaryDirectory();root=Path(__file__).resolve().parents[1]
         c=yaml.safe_load((root/'config/targeting.yaml').read_text(encoding='utf8'))
         c['_root']=Path(temporary.name);c['state'].update(source='fused',origin_file='origin.json')
-        c['airsim']['port']=41599;c['localization']=options(dict(mode='gnss_imu_5g'))
+        c['airsim']['port']=41599;c['localization']=options(dict(mode='gnss_imu_5g', absolute={'min_rsrp_dbm':-100.}))
         c['localization']['gnss_fault'].update(enabled=True,time_base='session',segments=[dict(start_s=2.,end_s=4.,mode='dropout',bias_enu_m=[0,0,0])])
         c['evaluation']['output_dir']='evaluation'
         adapter=StateNode(c);loc=LocalizationNode(c);evaluation=EvaluationNode(c)
@@ -83,9 +84,9 @@ class RosContracts(unittest.TestCase):
             self.assertTrue(all(a.header.stamp.sec*10**9+a.header.stamp.nanosec<b.header.stamp.sec*10**9+b.header.stamp.nanosec for a,b in zip(received,received[1:])))
             self.assertEqual(states[-1].header.stamp,received[-1].header.stamp)
             self.assertEqual(states[-1].pose,received[-1].pose)
-            self.assertLess(np.linalg.norm(loc.stream.filter.p),.01)
-            self.assertGreater(loc.stream.stats['gnss_injected_dropout'],10)
-            self.assertTrue(loc.stream.recoveries[0]['accepted']);self.assertGreater(loc.stream.stats['used_fiveg'],20)
+            self.assertLess(np.linalg.norm(loc.timeline.state.pos),.01)
+            self.assertGreater(loc.timeline.counts['fix/injected_dropout'],10)
+            self.assertTrue(loc.recoveries[0]['accepted']);self.assertGreater(loc.timeline.counts['radio/accepted'],20)
             self.assertTrue(any(m.get('valid') for m in metrics))
             self.assertLess(metrics[-1]['summary']['rmse_3d_m'],.01)
             self.assertEqual(metrics[-1]['origin_stamp_ns'],adapter.origin.header.stamp.sec*10**9+adapter.origin.header.stamp.nanosec)

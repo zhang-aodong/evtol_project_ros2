@@ -481,6 +481,7 @@ class NodeContracts(unittest.TestCase):
         def phase(value):
             transition(value)
             if value=='flying':refresh('mission_land')
+            if value=='failsafe_hold':node.stop.set()
         node.transition=phase
         class RPC:
             def __init__(self,*args):pass
@@ -495,7 +496,9 @@ class NodeContracts(unittest.TestCase):
             with patch('evtol_safety.gateway.AirSimRPC',RPC):node.run()
             self.assertFalse(any(name=='takeoff' for name,args in calls))
             if above_ground:
-                self.assertEqual(node.phase,'failed');self.assertIn('refusing airborne disarm',node.failure)
+                self.assertEqual(node.phase,'stopped');self.assertIn('refusing airborne disarm',node.failure)
+                self.assertTrue(node.failsafe)
+                self.assertNotIn(('enableApiControl',(False,'Drone1')),calls)
                 self.assertNotIn(('armDisarm',(False,'Drone1')),calls)
             else:
                 self.assertEqual(node.phase,'landed')

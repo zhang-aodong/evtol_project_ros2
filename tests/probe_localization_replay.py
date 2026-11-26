@@ -35,7 +35,7 @@ def main():
         for name,module in [('estimator','evtol_localization.node'),('evaluation','evtol_localization.evaluation_node')]:
             start(name,[sys.executable,'-u','-m',module,'--config',str(config),'--ros-args','-p','use_sim_time:=true'])
         spin(2.)
-        topics=['/simulation/reference_origin','/simulation/geodetic_reference']+[prefix+'/'+s for s in ('imu/data','gnss/fix','five_ga/observations','ground_truth/local_odometry','control/flight_status')]
+        topics=['/simulation/reference_origin','/simulation/geodetic_reference']+[prefix+'/'+s for s in ('imu/data','gnss/home','gnss/fix','five_ga/observations','ground_truth/local_odometry','control/flight_status')]
         player=start('player',[shutil.which('ros2'),'bag','play',str(a.bag),'--clock','100','--rate','2','--topics',*topics])
         deadline=time.perf_counter()+100
         while player.poll() is None and time.perf_counter()<deadline:spin(.1)

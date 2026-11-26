@@ -26,7 +26,8 @@ try {
     # The installed colcon-output summary plugin targets a newer colcon-core.
     # Disable only that optional presentation extension; keep all build checks.
     $env:COLCON_EXTENSION_BLOCKLIST = 'colcon_core.event_handler.summary'
-    & colcon build --merge-install --executor sequential --event-handlers console_direct+ `
+    # Build ROS packages only; references/ contains standalone offline projects.
+    & colcon build --base-paths src --merge-install --executor sequential --event-handlers console_direct+ `
       --cmake-args -G 'Visual Studio 17 2022' -A x64 `
       "-DPython3_EXECUTABLE=$rosPython" -DBUILD_TESTING=OFF
     if ($LASTEXITCODE -ne 0) { throw 'colcon build failed.' }
