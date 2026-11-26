@@ -219,8 +219,10 @@ class Engine:
         if failed and any(p.process.poll() is None for k,p in owned if k!='ue'):
             gateway_alive=any(k=='gateway' and p.process.poll() is None for k,p in owned)
             phase=self.telemetry.get('flight',{}).get('phase')
-            airborne=phase in ('takeoff','flying','landing','landing_paused','failsafe_hold')
-            if gateway_alive and ready and airborne and self.config['run']['execute']:
+            airborne=phase in ('takeoff','flying','landing','landing_paused','failsafe_hold','recovering')
+            # An unavailable RPC server must not cause the supervisor to kill
+            # the gateway that is retrying the connection.
+            if gateway_alive and airborne and self.config['run']['execute']:
                 previous=self.telemetry.get('runtime_fault',{})
                 if previous.get('failed')!=failed or not previous.get('hold_requested'):
                     self.log('ROS flight fault: '+', '.join(failed)+'; retain gateway and API control for altitude hold',level='ERROR')

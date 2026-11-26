@@ -25,6 +25,7 @@ class Gateway(Node):
         self.bootstrapping=False
         self.watchdog_z=None
         self.failsafe=False
+        self.rpc_recoveries=0;self.rpc_last_error='';self.resume_after_sequence=-1
         self.phase='waiting' if execute else 'shadow';self.failure='';self.land_result=None;self.land_thread=None
         self.flight_pub=self.create_publisher(String,'/'+c['namespace']+'/control/flight_status',LATCHED)
         self.wall_clock=Clock(clock_type=ClockType.STEADY_TIME)
@@ -43,7 +44,8 @@ class Gateway(Node):
     def publish_status(self):
         if self.origin:self.flight_pub.publish(String(data=json.dumps(dict(session_id=self.origin.session_id,
             stamp_ns=self.get_clock().now().nanoseconds,takeoff_stamp_ns=getattr(self,'takeoff_stamp_ns',None),
-            phase=self.phase,execute=self.execute,reason=self.failure))))
+            phase=self.phase,execute=self.execute,reason=self.failure,
+            rpc_recoveries=self.rpc_recoveries,rpc_last_error=self.rpc_last_error))))
 
     def transition(self,phase):
         if phase!=self.phase:self.get_logger().info('Flight phase: '+phase)
@@ -51,7 +53,7 @@ class Gateway(Node):
         self.phase=phase;self.publish_status()
 
     def stop_service(self,request,response):
-        self.stop.set();response.success=True;response.message='Stopping velocity execution; gateway cancels task, requests hover and releases API control'
+        self.stop.set();response.success=True;response.message='Stopping velocity execution; gateway requests hover and retains API control until verified landing'
         return response
 
     def hold_service(self,request,response):
@@ -95,7 +97,9 @@ class Gateway(Node):
                         and ns(self.command.valid_until)>now and -int(self.c['control'].get('clock_tolerance_s',.075)*1e9)<=now-ns(self.command.header.stamp)<=int(self.c['control']['ttl_s']*1e9))
                 if ready:break
             if self.stop.is_set():return
-            self.transition('arming');rpc.call('enableApiControl',True,vehicle);acquired=True
+            # A lost reply does not prove that the server rejected ownership.
+            # Treat acquisition as attempted before sending the request.
+            self.transition('arming');acquired=True;rpc.call('enableApiControl',True,vehicle)
             gains=self.c['control'].get('velocity_gains')
             if gains:rpc.call('setVelocityControllerGains',gains['kp'],gains['ki'],gains['kd'],vehicle)
             controlled_takeoff=self.c.get('navigation_lidar',{}).get('enabled',False) and self.c['control']['takeoff_on_start']
@@ -128,71 +132,152 @@ class Gateway(Node):
                 raise RuntimeError('Vehicle is landed: enable control.takeoff_on_start before executing a new mission')
             if not controlled_takeoff:self.transition('flying')
             while not self.stop.is_set():
-                begun=time.perf_counter();now=self.get_clock().now().nanoseconds
-                with self.lock:cmd=self.command;received=self.received;valid_state=self.state_ok and begun-self.state_wall<self.c['state']['timeout_s']
-                valid=bool(cmd and valid_state and -int(self.c['control'].get('clock_tolerance_s',.075)*1e9)<=now-ns(cmd.header.stamp)<=int(self.c['control']['ttl_s']*1e9)
-                    and ns(cmd.valid_until)>now and begun-received<self.c['control']['ttl_s'])
-                valid=valid and not self.failsafe
-                if self.phase=='takeoff':
-                    kin=rpc.call('getMultirotorState',vehicle)['kinematics_estimated']
-                    risen=initial_z-vector(kin['position'])[2]
-                    if risen>=self.c['mission'].get('takeoff_height_m',1.5)-.25:
-                        self.transition('flying')
-                    elif time.perf_counter()>takeoff_deadline:
-                        raise RuntimeError('Safety-controlled takeoff timed out; last safety reason: '+(cmd.reason if cmd else 'no command'))
-                if self.land_thread:
-                    if self.land_thread.is_alive():
-                        if not valid or cmd.reason!='mission_land':
-                            rpc.call('cancelLastTask',vehicle)
-                            self.land_thread.join(timeout=2.)
-                            if self.land_thread.is_alive():raise RuntimeError('Cancelled landing task did not finish')
-                            self.land_thread=None;self.land_result=None
-                            self.failure='Landing paused: '+(cmd.reason if cmd else 'missing command')
-                            self.transition('landing_paused')
-                            # Retain API control and command zero velocity.
-                            # Fresh, clear landing requests can retry; no RC
-                            # handover or airborne disarm on a transient gap.
-                            continue
-                        self.stop.wait(.02);continue
-                    if self.land_result is not True:raise RuntimeError('Landing task failed: '+str(self.land_result))
-                    # AirSim can set Landed only after a successful disarm.
-                    state=rpc.call('getMultirotorState',vehicle)
-                    if np.linalg.norm(vector(state['kinematics_estimated']['linear_velocity']))>.2:
-                        self.stop.wait(.02);continue
-                    local=NED_ENU@vector(state['kinematics_estimated']['position'])-xyz(self.origin.source_origin_enu)
-                    touchdown=np.asarray(self.c['mission']['waypoints_enu_m'][-1])
-                    if abs(local[2]-touchdown[2])>.45 or np.linalg.norm(local[:2]-touchdown[:2])>self.c['mission']['tolerance_m']+.4:
-                        raise RuntimeError('Landing returned before verified touchdown at final waypoint; refusing airborne disarm')
-                    if not rpc.call('armDisarm',False,vehicle):raise RuntimeError('Disarm after landing failed')
-                    deadline=time.perf_counter()+3.
-                    while rpc.call('getMultirotorState',vehicle)['landed_state']!=0:
-                        if time.perf_counter()>deadline:raise RuntimeError('Landed state not confirmed')
-                        self.stop.wait(.1)
-                    rpc.call('enableApiControl',False,vehicle);acquired=False
-                    self.transition('landed');self.health.ok();return
-                if valid and cmd.reason=='mission_land':
-                    self.failure=''
-                    self.transition('landing')
-                    self.land_thread=threading.Thread(target=self.land,args=(vehicle,),daemon=True);self.land_thread.start();continue
-                # RPC waits for this short task. Timeouts cannot stack commands;
-                # each request expires after duration even if this process dies.
-                self.velocity_task(rpc,cmd,valid)
-                self.health.ok();self.stop.wait(max(0.,1./self.c['control']['rate_hz']-(time.perf_counter()-begun)))
-        except Exception as exc:self.failure=str(exc);self.health.error(exc);self.transition('failed')
+                try:
+                    begun=time.perf_counter()
+                    cmd,valid=self.control_command()
+                    if self.phase=='takeoff':
+                        kin=rpc.call('getMultirotorState',vehicle)['kinematics_estimated']
+                        risen=initial_z-vector(kin['position'])[2]
+                        if risen>=self.c['mission'].get('takeoff_height_m',1.5)-.25:
+                            self.transition('flying')
+                        elif time.perf_counter()>takeoff_deadline:
+                            raise RuntimeError('Safety-controlled takeoff timed out; last safety reason: '+(cmd.reason if cmd else 'no command'))
+                    # State RPC may have consumed the command's entire TTL.
+                    cmd,valid=self.control_command()
+                    if self.land_thread:
+                        if self.land_thread.is_alive():
+                            if not valid or cmd.reason!='mission_land':
+                                rpc.call('cancelLastTask',vehicle)
+                                self.land_thread.join(timeout=2.)
+                                if self.land_thread.is_alive():raise RuntimeError('Cancelled landing task did not finish')
+                                self.land_thread=None;self.land_result=None
+                                self.failure='Landing paused: '+(cmd.reason if cmd else 'missing command')
+                                self.transition('landing_paused')
+                                # Retain API control and command zero velocity.
+                                # Fresh, clear landing requests can retry; no RC
+                                # handover or airborne disarm on a transient gap.
+                                continue
+                            self.stop.wait(.02);continue
+                        if self.land_result is not True:raise RuntimeError('Landing task failed: '+str(self.land_result))
+                        # AirSim can set Landed only after a successful disarm.
+                        state=rpc.call('getMultirotorState',vehicle)
+                        if np.linalg.norm(vector(state['kinematics_estimated']['linear_velocity']))>.2:
+                            self.stop.wait(.02);continue
+                        local=NED_ENU@vector(state['kinematics_estimated']['position'])-xyz(self.origin.source_origin_enu)
+                        touchdown=np.asarray(self.c['mission']['waypoints_enu_m'][-1])
+                        if abs(local[2]-touchdown[2])>.45 or np.linalg.norm(local[:2]-touchdown[:2])>self.c['mission']['tolerance_m']+.4:
+                            raise RuntimeError('Landing returned before verified touchdown at final waypoint; refusing airborne disarm')
+                        if not rpc.call('armDisarm',False,vehicle):raise RuntimeError('Disarm after landing failed')
+                        deadline=time.perf_counter()+3.
+                        while rpc.call('getMultirotorState',vehicle)['landed_state']!=0:
+                            if time.perf_counter()>deadline:raise RuntimeError('Landed state not confirmed')
+                            self.stop.wait(.1)
+                        rpc.call('enableApiControl',False,vehicle);acquired=False
+                        self.transition('landed');self.health.ok();return
+                    if valid and cmd.reason=='mission_land':
+                        self.failure=''
+                        self.transition('landing')
+                        self.land_thread=threading.Thread(target=self.land,args=(vehicle,),daemon=True);self.land_thread.start();continue
+                    # RPC waits for this short task. Timeouts cannot stack commands;
+                    # each request expires after duration even if this process dies.
+                    self.velocity_task(rpc,cmd,valid)
+                    self.health.ok();self.stop.wait(max(0.,1./self.c['control']['rate_hz']-(time.perf_counter()-begun)))
+                except OSError as exc:
+                    # Includes state queries and landing verification, not only
+                    # velocity RPC. Re-read command/state validity next cycle.
+                    interrupted=time.perf_counter()
+                    self.recover_rpc(rpc,exc)
+                    if controlled_takeoff:
+                        takeoff_deadline+=time.perf_counter()-interrupted
+                    continue
+
+        except Exception as exc:
+            self.failure=f"{getattr(rpc,'last_method','control')}: {exc}";self.health.error(self.failure)
+            if acquired:
+                # Mission errors and ambiguous startup replies must never hand
+                # an airborne vehicle over to an absent RC pilot.
+                self.failsafe=True;self.transition('failsafe_hold')
+                if isinstance(exc,OSError):self.recover_rpc(rpc,exc)
+                while not self.stop.is_set():
+                    try:self.velocity_task(rpc,None,False)
+                    except OSError as hold_error:self.recover_rpc(rpc,hold_error)
+                    except Exception as hold_error:
+                        self.health.error(hold_error);rpc.close()
+                    self.stop.wait(.1)
+            else:self.transition('failed')
         finally:
             if acquired:
                 try:
-                    rpc.call('cancelLastTask',vehicle);rpc.call('hover',vehicle);rpc.call('enableApiControl',False,vehicle)
+                    rpc.call('cancelLastTask',vehicle);rpc.call('hover',vehicle)
+                    self.get_logger().warning('Gateway stopped: hover requested; API control retained; no airborne disarm')
                 except Exception as exc:self.health.error(exc)
             rpc.close()
             if self.stop.is_set():self.transition('stopped')
+
+    def control_command(self):
+        now=self.get_clock().now().nanoseconds;wall=time.perf_counter()
+        with self.lock:
+            cmd=self.command
+            valid=bool(cmd and self.state_ok and wall-self.state_wall<self.c['state']['timeout_s']
+                and -int(self.c['control'].get('clock_tolerance_s',.075)*1e9)<=now-ns(cmd.header.stamp)<=int(self.c['control']['ttl_s']*1e9)
+                and ns(cmd.valid_until)>now and wall-self.received<self.c['control']['ttl_s']
+                and cmd.sequence>self.resume_after_sequence and not self.failsafe)
+        return cmd,valid
+
+    def recover_rpc(self,rpc,error):
+        """Reconnect, cancel uncertain motion, and hold before fresh commands.
+
+        Never replay a timed-out velocity, takeoff, arming or landing request.
+        If UE stays unavailable, retry until explicitly stopped. No client can
+        guarantee altitude control while the server is unreachable.
+        """
+        resume=self.phase
+        self.rpc_recoveries+=1
+        self.rpc_last_error=f"{getattr(rpc,'last_method','control')}: {error}"
+        self.failure=self.rpc_last_error;self.health.error(self.failure)
+        self.transition('recovering')
+        self.get_logger().warning('RPC interrupted; reconnecting with API control retained: '+self.failure)
+        rpc.close()
+        vehicle=self.c['airsim']['vehicle'];attempt=0
+        while not self.stop.is_set():
+            attempt+=1
+            try:
+                rpc.call('enableApiControl',True,vehicle)
+                rpc.call('cancelLastTask',vehicle)
+                # A landing worker can otherwise submit a late land after our
+                # cancellation. Do not resume motion until it has finished.
+                if self.land_thread:
+                    self.land_thread.join(timeout=.1)
+                    if self.land_thread.is_alive():
+                        self.stop.wait(.1);continue
+                    self.land_thread=None;self.land_result=None
+                    rpc.call('cancelLastTask',vehicle)
+                    if resume=='landing':resume='landing_paused'
+                if self.watchdog_z is None:
+                    state=rpc.call('getMultirotorState',vehicle)
+                    self.watchdog_z=float(vector(state['kinematics_estimated']['position'])[2])
+                yaw=dict(is_rate=True,yaw_or_rate=0.)
+                rpc.call('moveByVelocityZ',0.,0.,self.watchdog_z,self.c['control']['duration_s'],0,yaw,vehicle)
+                # Commands produced during the outage may already be stale.
+                # Require a later sequence in addition to the normal TTL checks.
+                with self.lock:self.resume_after_sequence=self.sequence
+                self.failure='';self.health.ok()
+                self.transition('failsafe_hold' if self.failsafe else resume)
+                self.get_logger().info('RPC recovered; altitude hold confirmed; waiting for fresh control command')
+                return
+            except (OSError,RuntimeError) as exc:
+                self.rpc_last_error=f"{getattr(rpc,'last_method','hold')}: {exc}"
+                self.failure=self.rpc_last_error;self.health.error(self.failure);rpc.close()
+                if attempt==1 or attempt%20==0:
+                    self.get_logger().warning(f'RPC recovery attempt {attempt}: {self.failure}')
+                self.stop.wait(.1)
 
     def velocity_task(self,rpc,command,valid):
         vehicle=self.c['airsim']['vehicle']
         velocity=NED_ENU@xyz(command.velocity) if valid else np.zeros(3)
         yaw=dict(is_rate=True,yaw_or_rate=-float(np.degrees(command.yaw_rate)) if valid else 0.)
         duration=self.c['control']['duration_s']
-        hold=self.phase in ('flying','landing_paused','failsafe_hold') and (not valid or np.linalg.norm(velocity)<1e-8)
+        hold=self.phase in ('takeoff','flying','landing_paused','failsafe_hold','recovering') and (not valid or np.linalg.norm(velocity)<1e-8)
         if hold:
             if self.watchdog_z is None:
                 self.watchdog_z=float(vector(rpc.call('getMultirotorState',vehicle)['kinematics_estimated']['position'])[2])

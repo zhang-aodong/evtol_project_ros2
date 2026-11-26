@@ -185,6 +185,22 @@ class ConfigurationContracts(unittest.TestCase):
                 self.assertEqual(engine.telemetry['runtime_fault']['failed'],['safety'])
         finally:engine.processes={}
 
+    def test_rpc_outage_and_critical_node_exit_keep_recovering_gateway_alive(self):
+        from types import SimpleNamespace
+        engine=Engine(self.root);self.addCleanup(engine.close)
+        engine.config['run']['execute']=True
+        engine.telemetry['flight']=dict(phase='recovering')
+        process=lambda code:SimpleNamespace(process=SimpleNamespace(poll=lambda:code))
+        engine.processes=dict(safety=process(1),gateway=process(None),truth_sensor=process(None))
+        try:
+            with patch.object(engine,'rpc') as rpc,patch.object(engine,'stop_ros') as cleanup:
+                engine.ros_stop=lambda service,timeout:'holding'
+                rpc.return_value.call.side_effect=TimeoutError('UE RPC unavailable')
+                engine.last_health=0.;engine.monitor()
+                cleanup.assert_not_called()
+                self.assertTrue(engine.telemetry['runtime_fault']['hold_requested'])
+        finally:engine.processes={}
+
     def test_evaluation_or_visualization_exit_does_not_hold_or_stop_flight(self):
         from types import SimpleNamespace
         engine=Engine(self.root);self.addCleanup(engine.close)

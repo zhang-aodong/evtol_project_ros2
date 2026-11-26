@@ -27,7 +27,7 @@ class WaypointMission:
             if self.takeoff_target is None:
                 self.takeoff_target=p.copy();self.takeoff_target[2]+=self.c.get('takeoff_height_m',1.5)
             self.phase='takeoff';return self.takeoff_target.copy(),self.phase
-        if flight_phase in ('waiting','arming','stopped','failed','shadow'):
+        if flight_phase in ('waiting','arming','recovering','failsafe_hold','stopped','failed','shadow'):
             self.phase=flight_phase;return p.copy(),self.phase
         # Collinear mission waypoints are pass-through gates, not hover stops.
         if self.c.get('mode','waypoints')=='waypoints' and flight_phase=='flying' and self.pass_through() and self._passed(position):
